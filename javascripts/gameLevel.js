@@ -1,3 +1,5 @@
+//Regions: ctrl+M ctrl+R
+
 class GameLevel {
   constructor(canvas, context) {
     this.canvas = canvas;
@@ -173,6 +175,7 @@ class GameLevel {
     window.requestAnimationFrame(() => {
       this.getFrameRate();
 
+      //CameraMovement
       this.viewport.update(
         this.player.position[0] + this.player.dimension[0] / 2,
         this.player.position[1] + this.player.dimension[1] / 2
@@ -180,6 +183,7 @@ class GameLevel {
       this.context.fillStyle = '#000000';
       this.context.fillRect(0, 0, this.viewport.screen[0], this.viewport.screen[1]);
 
+      //Fill the Map
       for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
         for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
           switch (this.mapArr[y * this.mapArrayWidth + x]) {
@@ -214,10 +218,12 @@ class GameLevel {
       this.context.fillText(`FPS: ${this.framesLastSec}`, 20, 20);
       this.lastFrameTime = this.currentFrameTime;
 
+      //Recursion
       this.drawLevel();
     });
   }
 
+  /* #region  FrameRate */
   getFrameRate() {
     let sec = Math.floor(Date.now() / 1000);
     if (sec != this.currentSec) {
@@ -228,4 +234,5 @@ class GameLevel {
       this.frameCount++;
     }
   }
+  /* #endregion */
 }
