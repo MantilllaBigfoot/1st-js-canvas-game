@@ -11,7 +11,7 @@ class GameLevel {
     this.lastFrameTime = 0;
     this.frameCount = 0;
     this.obstacleArr = [];
-    this.speed = 3;
+    this.speed = 5;
     this.mapArr = this.createMapArr();
     console.log(this.mapArr);
     this.player = new Player(this);
@@ -24,22 +24,21 @@ class GameLevel {
   //Creates the map with obstacles
   createMapArr() {
     const mapArr = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0,
-      1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1,
-      1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0,
-      0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
-      1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0,
-      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0,
-      0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1,
-      1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1,
-      0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
+      1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1,
+      0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1,
+      1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0,
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1,
+      1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1,
+      0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+      0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1,
+      0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1,
+      1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0
     ];
 
     // Get each element of the array and push it into an obstacle array
@@ -74,9 +73,11 @@ class GameLevel {
               this.player.dimension[0],
               this.player.dimension[1],
               this.player.position[0],
-              this.player.position[1]
+              this.player.position[1],
+              this.speed
             )
           ) {
+            console.log('true');
             allowedToMove = true;
           } else {
             return false;
@@ -90,7 +91,8 @@ class GameLevel {
               this.player.dimension[0],
               this.player.dimension[1],
               this.player.position[0],
-              this.player.position[1]
+              this.player.position[1],
+              this.speed
             )
           ) {
             allowedToMove = true;
@@ -106,7 +108,8 @@ class GameLevel {
               this.player.dimension[0],
               this.player.dimension[1],
               this.player.position[0],
-              this.player.position[1]
+              this.player.position[1],
+              this.speed
             )
           ) {
             allowedToMove = true;
@@ -123,9 +126,11 @@ class GameLevel {
               this.player.dimension[0],
               this.player.dimension[1],
               this.player.position[0],
-              this.player.position[1]
+              this.player.position[1],
+              this.speed
             )
           ) {
+            console.log('true');
             allowedToMove = true;
           } else {
             return false;
@@ -173,23 +178,10 @@ class GameLevel {
         this.player.position[1] + this.player.dimension[1] / 2
       );
       this.context.fillStyle = '#000000';
-      this.context.fillRect(
-        0,
-        0,
-        this.viewport.screen[0],
-        this.viewport.screen[1]
-      );
+      this.context.fillRect(0, 0, this.viewport.screen[0], this.viewport.screen[1]);
 
-      for (
-        let y = this.viewport.startTile[1];
-        y <= this.viewport.endTile[1];
-        y++
-      ) {
-        for (
-          let x = this.viewport.startTile[0];
-          x <= this.viewport.endTile[0];
-          x++
-        ) {
+      for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
+        for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
           switch (this.mapArr[y * this.mapArrayWidth + x]) {
             case 0:
               this.context.fillStyle = '#aff9e3';
