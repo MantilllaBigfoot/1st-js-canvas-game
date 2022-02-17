@@ -4,27 +4,45 @@ class GameLevel {
     this.context = context;
     this.tileW = 50;
     this.tileH = 50;
-    this.mapArrayWidth = 10;
-    this.mapArrayHeight = 10;
+    this.mapArrayWidth = 20;
+    this.mapArrayHeight = 20;
     this.currentSec = 0;
     this.framesLastSec = 0;
     this.lastFrameTime = 0;
     this.frameCount = 0;
     this.obstacleArr = [];
+    this.speed = 3;
     this.mapArr = this.createMapArr();
+    console.log(this.mapArr);
     this.player = new Player(this);
+    this.viewport = new ViewPort(this);
     this.drawLevel();
     this.enableControls();
+    this.viewport.screen = [canvas.width, canvas.height];
   }
 
+  //Creates the map with obstacles
   createMapArr() {
     const mapArr = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0,
-      1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0,
-      0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1,
-      0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0,
+      1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1,
+      1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0,
+      0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1,
+      1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
+      1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0,
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0,
+      0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1,
+      1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1,
+      0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
-    // Get each element of the array
+
+    // Get each element of the array and push it into an obstacle array
     for (let y = 0; y < this.mapArrayHeight; y++) {
       for (let x = 0; x < this.mapArrayWidth; x++) {
         switch (mapArr[y * this.mapArrayWidth + x]) {
@@ -45,6 +63,7 @@ class GameLevel {
     return mapArr;
   }
 
+  //Check if obstacles are colliding
   isAllowedToMove(direction) {
     let allowedToMove = true;
     switch (direction) {
@@ -114,21 +133,6 @@ class GameLevel {
         }
         break;
     }
-
-    // for (let element of this.obstacleArr) {
-    // if (
-    //   !element.checkIntersection(
-    //     this.player.dimension[0],
-    //     this.player.dimension[1],
-    //     this.player.position[0],
-    //     this.player.position[1]
-    //   )
-    //   ) {
-    //     allowedToMove = true;
-    //   } else {
-    //     return false;
-    //   }
-    // }
     return allowedToMove;
   }
 
@@ -138,30 +142,22 @@ class GameLevel {
       switch (code) {
         case 'ArrowUp':
           if (this.isAllowedToMove('Up')) {
-            this.player.position[1] -= 1;
-          } else {
-            console.log('NOT MOVE');
+            this.player.position[1] -= this.speed;
           }
           break;
         case 'ArrowDown':
           if (this.isAllowedToMove('Down')) {
-            this.player.position[1] += 1;
-          } else {
-            console.log('NOT MOVE');
+            this.player.position[1] += this.speed;
           }
           break;
         case 'ArrowRight':
           if (this.isAllowedToMove('Right')) {
-            this.player.position[0] += 1;
-          } else {
-            console.log('NOT MOVE');
+            this.player.position[0] += this.speed;
           }
           break;
         case 'ArrowLeft':
           if (this.isAllowedToMove('Left')) {
-            this.player.position[0] -= 1;
-          } else {
-            console.log('NOT MOVE');
+            this.player.position[0] -= this.speed;
           }
           break;
       }
@@ -170,46 +166,62 @@ class GameLevel {
 
   drawLevel() {
     window.requestAnimationFrame(() => {
-      var currentFrameTime = Date.now();
       this.getFrameRate();
 
-      for (let y = 0; y < this.mapArrayHeight; y++) {
-        for (let x = 0; x < this.mapArrayWidth; x++) {
+      this.viewport.update(
+        this.player.position[0] + this.player.dimension[0] / 2,
+        this.player.position[1] + this.player.dimension[1] / 2
+      );
+      this.context.fillStyle = '#000000';
+      this.context.fillRect(
+        0,
+        0,
+        this.viewport.screen[0],
+        this.viewport.screen[1]
+      );
+
+      for (
+        let y = this.viewport.startTile[1];
+        y <= this.viewport.endTile[1];
+        y++
+      ) {
+        for (
+          let x = this.viewport.startTile[0];
+          x <= this.viewport.endTile[0];
+          x++
+        ) {
           switch (this.mapArr[y * this.mapArrayWidth + x]) {
             case 0:
-              this.context.fillStyle = '#999999';
-              this.context.fillRect(
-                x * this.tileW,
-                y * this.tileH,
-                this.tileWw,
-                this.tileH
-              );
+              this.context.fillStyle = '#aff9e3';
+
               break;
             case 1:
-              this.context.fillStyle = '#eeeeee';
-              this.context.fillRect(
-                x * this.tileW,
-                y * this.tileH,
-                this.tileW,
-                this.tileH
-              );
+              this.context.fillStyle = '#012355';
               break;
           }
+          this.context.fillRect(
+            this.viewport.offset[0] + x * this.tileW,
+            this.viewport.offset[1] + y * this.tileH,
+            this.tileW,
+            this.tileH
+          );
         }
       }
 
-      console.log(this.obstacleArr.length);
+      //Draw the player
       this.context.fillStyle = '#0000ff';
       this.context.fillRect(
-        this.player.position[0],
-        this.player.position[1],
+        this.viewport.offset[0] + this.player.position[0],
+        this.viewport.offset[1] + this.player.position[1],
         this.player.dimension[0],
         this.player.dimension[1]
       );
 
+      //Draw the FPS counter
       this.context.fillStyle = '#ff0000';
-      this.context.fillText(`FPS: ${this.framesLastSec}`, 10, 20);
+      this.context.fillText(`FPS: ${this.framesLastSec}`, 20, 20);
       this.lastFrameTime = this.currentFrameTime;
+
       this.drawLevel();
     });
   }
