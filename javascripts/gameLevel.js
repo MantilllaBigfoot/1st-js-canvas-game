@@ -10,15 +10,11 @@ class GameLevel {
     this.framesLastSec = 0;
     this.lastFrameTime = 0;
     this.frameCount = 0;
-    this.keysDown = {
-      37: false,
-      38: false,
-      39: false,
-      40: false
-    };
+    this.obstacleArr = [];
     this.mapArr = this.createMapArr();
     this.player = new Player(this);
     this.drawLevel();
+    this.enableControls();
   }
 
   createMapArr() {
@@ -28,55 +24,146 @@ class GameLevel {
       0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1,
       0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
+    // Get each element of the array
+    for (let y = 0; y < this.mapArrayHeight; y++) {
+      for (let x = 0; x < this.mapArrayWidth; x++) {
+        switch (mapArr[y * this.mapArrayWidth + x]) {
+          case 0:
+            this.obstacleArr.push(
+              new Obstacle(
+                this.game,
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              )
+            );
+            break;
+        }
+      }
+    }
     return mapArr;
   }
 
-  toIndex(x, y) {
-    return y * this.mapArrayWidth + x;
+  isAllowedToMove(direction) {
+    let allowedToMove = true;
+    switch (direction) {
+      case 'Up':
+        for (let element of this.obstacleArr) {
+          if (
+            !element.checkIntersectionTop(
+              this.player.dimension[0],
+              this.player.dimension[1],
+              this.player.position[0],
+              this.player.position[1]
+            )
+          ) {
+            allowedToMove = true;
+          } else {
+            return false;
+          }
+        }
+        break;
+      case 'Down':
+        for (let element of this.obstacleArr) {
+          if (
+            !element.checkIntersectionBottom(
+              this.player.dimension[0],
+              this.player.dimension[1],
+              this.player.position[0],
+              this.player.position[1]
+            )
+          ) {
+            allowedToMove = true;
+          } else {
+            return false;
+          }
+        }
+        break;
+      case 'Left':
+        for (let element of this.obstacleArr) {
+          if (
+            !element.checkIntersectionLeft(
+              this.player.dimension[0],
+              this.player.dimension[1],
+              this.player.position[0],
+              this.player.position[1]
+            )
+          ) {
+            allowedToMove = true;
+            console.log('true');
+          } else {
+            return false;
+          }
+        }
+        break;
+      case 'Right':
+        for (let element of this.obstacleArr) {
+          if (
+            !element.checkIntersectionRight(
+              this.player.dimension[0],
+              this.player.dimension[1],
+              this.player.position[0],
+              this.player.position[1]
+            )
+          ) {
+            allowedToMove = true;
+          } else {
+            return false;
+          }
+        }
+        break;
+    }
+
+    // for (let element of this.obstacleArr) {
+    // if (
+    //   !element.checkIntersection(
+    //     this.player.dimension[0],
+    //     this.player.dimension[1],
+    //     this.player.position[0],
+    //     this.player.position[1]
+    //   )
+    //   ) {
+    //     allowedToMove = true;
+    //   } else {
+    //     return false;
+    //   }
+    // }
+    return allowedToMove;
   }
 
-  enableControls(currentFrameTime) {
+  enableControls() {
     window.addEventListener('keydown', (event) => {
       const code = event.code;
       switch (code) {
         case 'ArrowUp':
-          //check if the player is allowed to move
-          if (
-            this.player.tileFrom[1] > 0 &&
-            this.mapArr[
-              this.toIndex(this.player.tileFrom[0], this.player.tileFrom[1] - 1)
-            ] === 1
-          ) {
-            //move one tile up
-            this.player.tileDest[1] -= 1;
+          if (this.isAllowedToMove('Up')) {
+            this.player.position[1] -= 1;
           } else {
-            console.log('you cant move');
+            console.log('NOT MOVE');
           }
           break;
         case 'ArrowDown':
-          if (
-            this.player.tileFrom[1] < this.mapArrayHeight - 1 &&
-            this.mapArr[
-              this.toIndex(this.player.tileFrom[0], this.player.tileFrom[1] + 1)
-            ] === 1
-          ) {
-            this.player.tileDest[1] += 1;
+          if (this.isAllowedToMove('Down')) {
+            this.player.position[1] += 1;
           } else {
-            console.log('you cant move');
+            console.log('NOT MOVE');
           }
           break;
         case 'ArrowRight':
+          if (this.isAllowedToMove('Right')) {
+            this.player.position[0] += 1;
+          } else {
+            console.log('NOT MOVE');
+          }
           break;
         case 'ArrowLeft':
+          if (this.isAllowedToMove('Left')) {
+            this.player.position[0] -= 1;
+          } else {
+            console.log('NOT MOVE');
+          }
           break;
-        case 'Space':
-          break;
-      }
-      if (
-        this.player.tileFrom[0] !== this.player.tileDest[0] ||
-        this.player.tileFrom[1] !== this.player.tileDest[1]
-      ) {
-        this.player.timeMoved = currentFrameTime;
       }
     });
   }
@@ -86,33 +173,33 @@ class GameLevel {
       var currentFrameTime = Date.now();
       this.getFrameRate();
 
-      if (!this.player.processMovement(currentFrameTime)) {
-        this.enableControls(currentFrameTime);
-      }
-      // Get each element of the array
       for (let y = 0; y < this.mapArrayHeight; y++) {
         for (let x = 0; x < this.mapArrayWidth; x++) {
           switch (this.mapArr[y * this.mapArrayWidth + x]) {
             case 0:
               this.context.fillStyle = '#999999';
+              this.context.fillRect(
+                x * this.tileW,
+                y * this.tileH,
+                this.tileWw,
+                this.tileH
+              );
               break;
             case 1:
               this.context.fillStyle = '#eeeeee';
+              this.context.fillRect(
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              );
               break;
           }
-          this.context.fillRect(
-            x * this.tileW,
-            y * this.tileH,
-            this.tileW,
-            this.tileH
-          );
         }
       }
 
+      console.log(this.obstacleArr.length);
       this.context.fillStyle = '#0000ff';
-      console.log(this.player.position[0]);
-      console.log(this.player.position[1]);
-      //this.context.fillRect(50,50,50,50);
       this.context.fillRect(
         this.player.position[0],
         this.player.position[1],
