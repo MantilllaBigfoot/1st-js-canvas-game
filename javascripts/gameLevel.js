@@ -1,4 +1,47 @@
 //Regions: ctrl+M ctrl+R
+let tileset = null,
+  tileseturl = '/tileset.png',
+  tilesetLoaded = false;
+
+let floorTypes = {
+  solid: 0,
+  path: 1,
+  water: 2
+};
+let tileTypes = {
+  0: {
+    colour: '#685b48',
+    floor: floorTypes.solid,
+    sprite: [{ x: 0, y: 0, w: 40, h: 40 }]
+  },
+  1: {
+    colour: '#5aa457',
+    floor: floorTypes.path,
+    sprite: [{ x: 40, y: 0, w: 40, h: 40 }]
+  },
+  2: {
+    colour: '#e8bd7a',
+    floor: floorTypes.path,
+    sprite: [{ x: 80, y: 0, w: 40, h: 40 }]
+  },
+  3: {
+    colour: '#286625',
+    floor: floorTypes.solid,
+    sprite: [{ x: 120, y: 0, w: 40, h: 40 }]
+  },
+  4: {
+    colour: '#678fd9',
+    floor: floorTypes.water,
+    sprite: [{ x: 160, y: 0, w: 40, h: 40 }]
+  }
+};
+
+let directions = {
+  up: 0,
+  right: 1,
+  down: 2,
+  left: 3
+};
 
 class GameLevel {
   constructor(canvas, context) {
@@ -15,31 +58,45 @@ class GameLevel {
     this.obstacleArr = [];
     this.speed = 5;
     this.mapArr = this.createMapArr();
-    console.log(this.mapArr);
+    this.directions = {
+      up: 0,
+      right: 1,
+      down: 2,
+      left: 3
+    };
     this.player = new Player(this);
     this.viewport = new ViewPort(this);
     this.drawLevel();
     this.enableControls();
     this.viewport.screen = [canvas.width, canvas.height];
+
+    tileset = new Image();
+    tileset.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    tileset.onload = () => (tilesetLoaded = true);
+    tileset.src = tileseturl;
+    console.log(tileset);
   }
 
   //Creates the map with obstacles
   createMapArr() {
     const mapArr = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
-      1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1,
-      0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1,
-      1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0,
-      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1,
-      1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1,
-      0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-      0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1,
-      0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1,
-      1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 4, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 0, 0, 2, 3, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      0, 2, 2, 0, 0, 2, 3, 1, 4, 4, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 0, 0, 2, 3, 1,
+      1, 4, 4, 1, 2, 3, 3, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2,
+      2, 2, 2, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0,
+      0, 1, 1, 1, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 2, 4, 4,
+      4, 4, 4, 1, 1, 1, 2, 2, 2, 2, 1, 0, 0, 1, 1, 1, 1, 2, 3, 2, 1, 1, 4, 1, 1, 1, 1, 3,
+      3, 2, 1, 0, 0, 1, 2, 2, 2, 2, 1, 2, 1, 1, 4, 1, 1, 1, 1, 1, 3, 2, 1, 0, 0, 1, 2, 3,
+      3, 2, 1, 2, 1, 1, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 0, 1, 2, 3, 3, 2, 1, 2, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 2, 1, 0, 0, 1, 2, 3, 4, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 0,
+      0, 3, 2, 3, 4, 4, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 2, 1, 0, 0, 3, 2, 3, 4, 4, 3, 2,
+      1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 3, 0, 0, 3, 2, 3, 4, 1, 3, 2, 1, 3, 1, 1, 1, 2, 1, 1,
+      1, 2, 3, 0, 0, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 1, 1, 2, 2, 2, 2, 2, 3, 0, 0, 1, 1, 1,
+      1, 1, 1, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0
     ];
 
@@ -148,27 +205,35 @@ class GameLevel {
       const code = event.code;
       switch (code) {
         case 'ArrowUp':
+          this.player.direction = this.directions.up;
           if (this.isAllowedToMove('Up')) {
             this.player.position[1] -= this.speed;
           }
           break;
         case 'ArrowDown':
+          this.player.direction = this.directions.down;
           if (this.isAllowedToMove('Down')) {
             this.player.position[1] += this.speed;
           }
           break;
         case 'ArrowRight':
+          this.player.direction = this.directions.right;
           if (this.isAllowedToMove('Right')) {
             this.player.position[0] += this.speed;
           }
           break;
         case 'ArrowLeft':
+          this.player.direction = this.directions.left;
           if (this.isAllowedToMove('Left')) {
             this.player.position[0] -= this.speed;
           }
           break;
       }
     });
+  }
+
+  toIndex(x, y) {
+    return y * this.mapArrayWidth + x;
   }
 
   drawLevel() {
@@ -186,32 +251,68 @@ class GameLevel {
       //Fill the Map
       for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
         for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
-          switch (this.mapArr[y * this.mapArrayWidth + x]) {
-            case 0:
-              this.context.fillStyle = '#aff9e3';
-
-              break;
-            case 1:
-              this.context.fillStyle = '#012355';
-              break;
-          }
-          this.context.fillRect(
+          let tile = tileTypes[this.mapArr[this.toIndex(x, y)]];
+          console.dir(this.viewport.offset[0] + x * this.tileW);
+          this.context.drawImage(
+            tileset,
+            tile.sprite[0].x,
+            tile.sprite[0].y,
+            tile.sprite[0].w,
+            tile.sprite[0].h,
             this.viewport.offset[0] + x * this.tileW,
             this.viewport.offset[1] + y * this.tileH,
             this.tileW,
             this.tileH
           );
+          // this.context.drawImage(
+          //   tileset,
+          //   tile.sprite[0].x,
+          //   tile.sprite[0].y,
+          //   tile.sprite[0].w,
+          //   tile.sprite[0].h,
+          //   this.viewport.offset[0] + x * this.tileW,
+          //   this.viewport.offset[1] + y * this.tileH
+          // );
+          // this.context.fillStyle =
+          //   tileTypes[this.mapArr[y * this.mapArrayWidth + x]].colour;
+          // switch (this.mapArr[y * this.mapArrayWidth + x]) {
+          //   case 0:
+          //     this.context.fillStyle = '#aff9e3';
+
+          //     break;
+          //   case 1:
+          //     this.context.fillStyle = '#012355';
+          //     break;
+          // }
+          // this.context.fillRect(
+          //   this.viewport.offset[0] + x * this.tileW,
+          //   this.viewport.offset[1] + y * this.tileH,
+          //   this.tileW,
+          //   this.tileH
+          // );
         }
       }
 
       //Draw the player
-      this.context.fillStyle = '#0000ff';
-      this.context.fillRect(
+      let sprite = this.player.sprites[this.player.direction];
+      this.context.drawImage(
+        tileset,
+        sprite[0].x,
+        sprite[0].y,
+        sprite[0].w,
+        sprite[0].h,
         this.viewport.offset[0] + this.player.position[0],
         this.viewport.offset[1] + this.player.position[1],
         this.player.dimension[0],
         this.player.dimension[1]
       );
+      // this.context.fillStyle = '#0000ff';
+      // this.context.fillRect(
+      //   this.viewport.offset[0] + this.player.position[0],
+      //   this.viewport.offset[1] + this.player.position[1],
+      //   this.player.dimension[0],
+      //   this.player.dimension[1]
+      // );
 
       //Draw the FPS counter
       this.context.fillStyle = '#ff0000';
