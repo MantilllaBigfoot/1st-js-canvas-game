@@ -69,7 +69,6 @@ class GameLevel {
     this.pathObstArr = [];
     this.originalPlayerSpeed = 5;
     this.playerSpeed = this.originalPlayerSpeed;
-    console.log(this.playerSpeed);
     this.enemyArr = [];
     this.key = this.createKey();
     this.generateEnemies();
@@ -114,8 +113,9 @@ class GameLevel {
       for (let x = 0; x < this.mapArrayWidth; x++) {
         switch (mapArr[y * this.mapArrayWidth + x]) {
           case 0:
+          case 3:
             this.obstacleArr.push(
-              new Obstacle(
+              new Border(
                 this.game,
                 x * this.tileW,
                 y * this.tileH,
@@ -126,7 +126,7 @@ class GameLevel {
             break;
           case 1:
             this.slowObstArr.push(
-              new SlowObstacle(
+              new Obstacle(
                 this.game,
                 x * this.tileW,
                 y * this.tileH,
@@ -137,7 +137,7 @@ class GameLevel {
             break;
           case 2:
             this.pathObstArr.push(
-              new PathObstacle(
+              new Obstacle(
                 this.game,
                 x * this.tileW,
                 y * this.tileH,
@@ -159,7 +159,6 @@ class GameLevel {
 
   //Generates one Enemy and pushes him to the enemy Array
   createEnemy(speed, dimension, startPos, endPos) {
-    console.log(dimension);
     const enemySpeed = speed;
     const enemyDimension = dimension;
     const enemyStartingPosition = startPos;
@@ -351,7 +350,6 @@ class GameLevel {
     window.requestAnimationFrame(() => {
       this.getFrameRate();
       this.runLogic();
-      console.log(this.playerSpeed);
 
       //CameraMovement
       this.viewport.update(
