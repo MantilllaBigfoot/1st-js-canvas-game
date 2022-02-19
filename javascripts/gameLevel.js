@@ -12,26 +12,31 @@ let floorTypes = {
 //The sprite section determins the coordinates of the spriten in the picture
 let tileTypes = {
   0: {
+    //Border
     colour: '#685b48',
     floor: floorTypes.solid,
     sprite: [{ x: 0, y: 0, w: 40, h: 40 }]
   },
   1: {
+    //SlowObstacle
     colour: '#5aa457',
     floor: floorTypes.path,
     sprite: [{ x: 40, y: 0, w: 40, h: 40 }]
   },
   2: {
+    //Path
     colour: '#e8bd7a',
     floor: floorTypes.path,
     sprite: [{ x: 80, y: 0, w: 40, h: 40 }]
   },
   3: {
+    //
     colour: '#286625',
     floor: floorTypes.solid,
     sprite: [{ x: 120, y: 0, w: 40, h: 40 }]
   },
   4: {
+    //Water
     colour: '#678fd9',
     floor: floorTypes.water,
     sprite: [{ x: 160, y: 0, w: 40, h: 40 }]
@@ -60,8 +65,13 @@ class GameLevel {
     this.lastFrameTime = 0;
     this.frameCount = 0;
     this.obstacleArr = [];
-    this.playerSpeed = 5;
+    this.slowObstArr = [];
+    this.pathObstArr = [];
+    this.originalPlayerSpeed = 5;
+    this.playerSpeed = this.originalPlayerSpeed;
+    console.log(this.playerSpeed);
     this.enemyArr = [];
+    this.key = this.createKey();
     this.generateEnemies();
     this.mapArr = this.createMapArr();
     this.directions = {
@@ -114,15 +124,35 @@ class GameLevel {
               )
             );
             break;
+          case 1:
+            this.slowObstArr.push(
+              new SlowObstacle(
+                this.game,
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              )
+            );
+            break;
+          case 2:
+            this.pathObstArr.push(
+              new PathObstacle(
+                this.game,
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              )
+            );
         }
       }
     }
-    
+
     return mapArr;
   }
 
-
-  generateEnemies(){
+  generateEnemies() {
     this.createEnemy(1, [10, 10], [100, 200], [200, 300]);
     this.createEnemy(1, [10, 10], [100, 200], [400, 300]);
   }
@@ -145,6 +175,11 @@ class GameLevel {
       'end'
     );
     this.enemyArr.push(enemy);
+  }
+
+  //Generates the winning key
+  createKey() {
+    return new Key(this, [20, 20], [200, 200]);
   }
 
   //Tries to load the image
@@ -242,24 +277,28 @@ class GameLevel {
         case 'ArrowUp':
           this.player.direction = this.directions.up;
           if (this.isAllowedToMove('Up')) {
+            this.checkPlayerSpeed();
             this.player.position[1] -= this.playerSpeed;
           }
           break;
         case 'ArrowDown':
           this.player.direction = this.directions.down;
           if (this.isAllowedToMove('Down')) {
+            this.checkPlayerSpeed();
             this.player.position[1] += this.playerSpeed;
           }
           break;
         case 'ArrowRight':
           this.player.direction = this.directions.right;
           if (this.isAllowedToMove('Right')) {
+            this.checkPlayerSpeed();
             this.player.position[0] += this.playerSpeed;
           }
           break;
         case 'ArrowLeft':
           this.player.direction = this.directions.left;
           if (this.isAllowedToMove('Left')) {
+            this.checkPlayerSpeed();
             this.player.position[0] -= this.playerSpeed;
           }
           break;
@@ -267,14 +306,29 @@ class GameLevel {
     });
   }
 
-  //
+  //Slows player when going over slowObstacle
+  checkPlayerSpeed() {
+    this.slowObstArr.forEach((element) => {
+      if (element.checkIntersection(this.player)) {
+        this.playerSpeed = 2;
+        return;
+      }
+    });
+    this.pathObstArr.forEach((element) => {
+      if (element.checkIntersection(this.player)) {
+        this.playerSpeed = this.originalPlayerSpeed;
+        return;
+      }
+    });
+  }
+
+  //Continuoulsy decreases the countdown
   runCountdown() {
     setInterval(function () {
       countdown--;
     }, 1000);
   }
 
-  //Continuoulsy decreases the countdown
   runLogic() {
     this.enemyArr.forEach((element) => {
       element.handleMovement();
@@ -282,6 +336,10 @@ class GameLevel {
         countdown--;
       }
     });
+
+    if (this.key.checkIntersection(this.player)) {
+      console.log('GOT THE KEY');
+    }
   }
 
   toIndex(x, y) {
@@ -293,6 +351,7 @@ class GameLevel {
     window.requestAnimationFrame(() => {
       this.getFrameRate();
       this.runLogic();
+      console.log(this.playerSpeed);
 
       //CameraMovement
       this.viewport.update(
@@ -372,6 +431,15 @@ class GameLevel {
           element.dimension[1]
         );
       });
+
+      //Draw the key
+      this.context.fillStyle = '#000000';
+      this.context.fillRect(
+        this.viewport.offset[0] + this.key.position[0],
+        this.viewport.offset[1] + this.key.position[1],
+        this.key.dimension[0],
+        this.key.dimension[1]
+      );
 
       //Draw the FPS counter
       this.context.fillStyle = '#ff0000';
