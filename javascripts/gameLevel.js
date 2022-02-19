@@ -8,6 +8,8 @@ let floorTypes = {
   path: 1,
   water: 2
 };
+
+//The sprite section determins the coordinates of the spriten in the picture
 let tileTypes = {
   0: {
     colour: '#685b48',
@@ -43,6 +45,8 @@ let directions = {
   left: 3
 };
 
+let countdown = 1000;
+
 class GameLevel {
   constructor(canvas, context) {
     this.canvas = canvas;
@@ -56,7 +60,9 @@ class GameLevel {
     this.lastFrameTime = 0;
     this.frameCount = 0;
     this.obstacleArr = [];
-    this.speed = 5;
+    this.playerSpeed = 5;
+    this.enemyArr = [];
+    this.generateEnemies();
     this.mapArr = this.createMapArr();
     this.directions = {
       up: 0,
@@ -66,24 +72,17 @@ class GameLevel {
     };
     this.player = new Player(this);
     this.viewport = new ViewPort(this);
+    this.viewport.screen = [canvas.width, canvas.height];
+    this.runCountdown(this.countdown);
+    this.handleImages();
     this.drawLevel();
     this.enableControls();
-    this.viewport.screen = [canvas.width, canvas.height];
-
-    tileset = new Image();
-    tileset.onerror = () => {
-      this.canvas = null;
-      console.log('Failed loading tileset.');
-    };
-    tileset.onload = () => (tilesetLoaded = true);
-    tileset.src = tileseturl;
-    console.log(tileset);
   }
 
   //Creates the map with obstacles
   createMapArr() {
     const mapArr = [
-      0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 4, 1, 1, 1, 1,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 4, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 0, 0, 2, 3, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       0, 2, 2, 0, 0, 2, 3, 1, 4, 4, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 0, 0, 2, 3, 1,
       1, 4, 4, 1, 2, 3, 3, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2,
@@ -118,7 +117,45 @@ class GameLevel {
         }
       }
     }
+    
     return mapArr;
+  }
+
+
+  generateEnemies(){
+    this.createEnemy(1, [10, 10], [100, 200], [200, 300]);
+    this.createEnemy(1, [10, 10], [100, 200], [400, 300]);
+  }
+
+  //Generates one Enemy and pushes him to the enemy Array
+  createEnemy(speed, dimension, startPos, endPos) {
+    console.log(dimension);
+    const enemySpeed = speed;
+    const enemyDimension = dimension;
+    const enemyStartingPosition = startPos;
+    const enemyEndPosition = endPos;
+    const enemyCurrPosition = startPos;
+    const enemy = new Enemy(
+      this,
+      enemyStartingPosition,
+      enemyEndPosition,
+      enemyCurrPosition,
+      enemyDimension,
+      enemySpeed,
+      'end'
+    );
+    this.enemyArr.push(enemy);
+  }
+
+  //Tries to load the image
+  handleImages() {
+    tileset = new Image();
+    tileset.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    tileset.onload = () => (tilesetLoaded = true);
+    tileset.src = tileseturl;
   }
 
   //Check if obstacles are colliding
@@ -133,10 +170,9 @@ class GameLevel {
               this.player.dimension[1],
               this.player.position[0],
               this.player.position[1],
-              this.speed
+              this.playerSpeed
             )
           ) {
-            console.log('true');
             allowedToMove = true;
           } else {
             return false;
@@ -151,7 +187,7 @@ class GameLevel {
               this.player.dimension[1],
               this.player.position[0],
               this.player.position[1],
-              this.speed
+              this.playerSpeed
             )
           ) {
             allowedToMove = true;
@@ -168,11 +204,10 @@ class GameLevel {
               this.player.dimension[1],
               this.player.position[0],
               this.player.position[1],
-              this.speed
+              this.playerSpeed
             )
           ) {
             allowedToMove = true;
-            console.log('true');
           } else {
             return false;
           }
@@ -186,10 +221,9 @@ class GameLevel {
               this.player.dimension[1],
               this.player.position[0],
               this.player.position[1],
-              this.speed
+              this.playerSpeed
             )
           ) {
-            console.log('true');
             allowedToMove = true;
           } else {
             return false;
@@ -200,6 +234,7 @@ class GameLevel {
     return allowedToMove;
   }
 
+  //Handles the keyboard input
   enableControls() {
     window.addEventListener('keydown', (event) => {
       const code = event.code;
@@ -207,27 +242,44 @@ class GameLevel {
         case 'ArrowUp':
           this.player.direction = this.directions.up;
           if (this.isAllowedToMove('Up')) {
-            this.player.position[1] -= this.speed;
+            this.player.position[1] -= this.playerSpeed;
           }
           break;
         case 'ArrowDown':
           this.player.direction = this.directions.down;
           if (this.isAllowedToMove('Down')) {
-            this.player.position[1] += this.speed;
+            this.player.position[1] += this.playerSpeed;
           }
           break;
         case 'ArrowRight':
           this.player.direction = this.directions.right;
           if (this.isAllowedToMove('Right')) {
-            this.player.position[0] += this.speed;
+            this.player.position[0] += this.playerSpeed;
           }
           break;
         case 'ArrowLeft':
           this.player.direction = this.directions.left;
           if (this.isAllowedToMove('Left')) {
-            this.player.position[0] -= this.speed;
+            this.player.position[0] -= this.playerSpeed;
           }
           break;
+      }
+    });
+  }
+
+  //
+  runCountdown() {
+    setInterval(function () {
+      countdown--;
+    }, 1000);
+  }
+
+  //Continuoulsy decreases the countdown
+  runLogic() {
+    this.enemyArr.forEach((element) => {
+      element.handleMovement();
+      if (element.checkIntersection(this.player)) {
+        countdown--;
       }
     });
   }
@@ -236,9 +288,11 @@ class GameLevel {
     return y * this.mapArrayWidth + x;
   }
 
+  //Recursively draws the map with all elements
   drawLevel() {
     window.requestAnimationFrame(() => {
       this.getFrameRate();
+      this.runLogic();
 
       //CameraMovement
       this.viewport.update(
@@ -248,11 +302,10 @@ class GameLevel {
       this.context.fillStyle = '#000000';
       this.context.fillRect(0, 0, this.viewport.screen[0], this.viewport.screen[1]);
 
-      //Fill the Map
+      //Draw the Map
       for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
         for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
           let tile = tileTypes[this.mapArr[this.toIndex(x, y)]];
-          console.dir(this.viewport.offset[0] + x * this.tileW);
           this.context.drawImage(
             tileset,
             tile.sprite[0].x,
@@ -264,6 +317,7 @@ class GameLevel {
             this.tileW,
             this.tileH
           );
+          /* #region  oldCode */
           // this.context.drawImage(
           //   tileset,
           //   tile.sprite[0].x,
@@ -290,6 +344,7 @@ class GameLevel {
           //   this.tileW,
           //   this.tileH
           // );
+          /* #endregion */
         }
       }
 
@@ -306,18 +361,25 @@ class GameLevel {
         this.player.dimension[0],
         this.player.dimension[1]
       );
-      // this.context.fillStyle = '#0000ff';
-      // this.context.fillRect(
-      //   this.viewport.offset[0] + this.player.position[0],
-      //   this.viewport.offset[1] + this.player.position[1],
-      //   this.player.dimension[0],
-      //   this.player.dimension[1]
-      // );
+
+      //Draw the enemy
+      this.context.fillStyle = '#0000ff';
+      this.enemyArr.forEach((element, index) => {
+        this.context.fillRect(
+          this.viewport.offset[0] + element.currPosition[0],
+          this.viewport.offset[1] + element.currPosition[1],
+          element.dimension[0],
+          element.dimension[1]
+        );
+      });
 
       //Draw the FPS counter
       this.context.fillStyle = '#ff0000';
       this.context.fillText(`FPS: ${this.framesLastSec}`, 20, 20);
       this.lastFrameTime = this.currentFrameTime;
+
+      this.context.fillStyle = '#ffffff';
+      this.context.fillText(`Coundown: ${countdown}`, 80, 20);
 
       //Recursion
       this.drawLevel();

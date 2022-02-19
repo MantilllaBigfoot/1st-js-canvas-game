@@ -27,8 +27,6 @@ class Obstacle {
   // }
 
   checkIntersectionTop(elementWidth, elementHeight, posX, posY, speed) {
-    console.log(posY);
-    console.log(this.position[1] + this.height);
     return (
       // is top edge of element above bottom edge of obstacle
       posY <= this.position[1] + this.height &&
@@ -42,9 +40,6 @@ class Obstacle {
   }
 
   checkIntersectionBottom(elementWidth, elementHeight, posX, posY, speed) {
-    console.log(posY + elementHeight);
-    console.log(this.position[1]);
-    console.log(posY + elementHeight >= this.position[1]);
     return (
       // is bottom edge of element below top edge of obstacle
       posY + elementHeight >= this.position[1] &&
@@ -58,8 +53,6 @@ class Obstacle {
   }
 
   checkIntersectionLeft(elementWidth, elementHeight, posX, posY, speed) {
-    console.log(posX + elementWidth);
-    console.log(this.position[0]);
     return (
       // is bottom edge of element below top edge of obstaclt
       posY + elementHeight >= this.position[1] + speed &&
