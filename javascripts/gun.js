@@ -1,4 +1,4 @@
-class Key extends TriggerItem {
+class Gun extends TriggerItem {
   constructor(gameLevelInstance, dimension, position) {
     super(gameLevelInstance, dimension, position);
   }
