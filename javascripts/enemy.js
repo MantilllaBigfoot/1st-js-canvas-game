@@ -1,14 +1,25 @@
 class Enemy {
-  constructor(gameLevelInstance, startPos, endPos, currPos, dim, speed, direction) {
+  constructor(
+    gameLevelInstance,
+    startPos,
+    endPos,
+    currPos,
+    dim,
+    speed,
+    initialDirection
+  ) {
     this.game = gameLevelInstance;
     this.startPosition = [startPos[0], startPos[1]];
     this.endPosition = [endPos[0], endPos[1]];
     this.currPosition = [currPos[0], currPos[1]];
     this.dimension = [dim[0], dim[1]];
     this.speed = speed;
-    this.direction = direction;
-    //this.direction = gameLevelInstance.directions.down;
-    //this.sprites = {};
+    this.initialDirection = initialDirection;
+    this.isShot = false;
+    this.sprites = {};
+    this.sprites[gameLevelInstance.directions.right] = [{ x: 0, y: 327, w: 68.5, h: 46 }];
+    //this.sprites[gameLevelInstance.directions.down] = [{ x: 0, y: 0, w: 16, h: 18 }];
+    // this.sprites[gameLevelInstance.initialDirections.left] = [{ x: 0, y: 36, w: 16, h: 18 }];
   }
 
   checkIntersectionWithOffset(element) {
@@ -51,9 +62,13 @@ class Enemy {
     );
   }
 
+  handleMovementWhenShot() {
+    this.currPosition[0] += this.speed;
+  }
+
   handleMovement() {
-    //If enemy direction is towards the endPosition (right)
-    if (this.direction === 'end') {
+    //If enemy initialDirection is towards the endPosition (right)
+    if (this.initialDirection === 'end') {
       // If enemy right edge of enemy before the endPosition => go right
       if (this.currPosition[0] + this.dimension[0] < this.endPosition[0]) {
         this.currPosition[0] += this.speed;
@@ -72,14 +87,14 @@ class Enemy {
       ) {
         this.currPosition[1] += this.speed;
       }
-      //If enemy right edge is at the endPosition => change direction
+      //If enemy right edge is at the endPosition => change initialDirection
       else if (
         this.currPosition[0] + this.dimension[0] >= this.endPosition[0] &&
         this.currPosition[1] <= this.endPosition[1] - this.speed
       ) {
-        this.direction = 'start';
+        this.initialDirection = 'start';
       }
-    } else if (this.direction === 'start') {
+    } else if (this.initialDirection === 'start') {
       //If enemy left edge is at the startPosition (left), but the top edge is not  => go up
       if (
         this.currPosition[0] >= this.startPosition[0] &&
@@ -98,9 +113,9 @@ class Enemy {
       ) {
         this.currPosition[1] += this.speed;
       }
-      //If enemy right edge is at the endPosition => change direction
+      //If enemy right edge is at the endPosition => change initialDirection
       else if (this.currPosition[0] <= this.startPosition[0]) {
-        this.direction = 'end';
+        this.initialDirection = 'end';
       }
     }
   }

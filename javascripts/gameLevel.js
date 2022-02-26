@@ -3,6 +3,28 @@ let tileset = null,
   tileseturl = '/tileset.png',
   tilesetLoaded = false;
 
+let playerSprite = null,
+  playerSpriteUrl = '/src/playerSprites/greenPlayerSprite.png',
+  playerSpriteLoaded = false;
+
+let enemySprite = null,
+  enemySpriteUrl = '/src/enemySprites/NyanCatEnemy.png',
+  enemySpriteLoaded = false;
+
+let keySprite = null,
+  keySpriteUrl = '/src/objectSprites/keySprite.png',
+  keySpriteLoaded = false;
+
+let gunSprite = null,
+  gunSpriteUrl = '/src/gunSprites/revolver.png',
+  gunSpriteLoaded = false;
+
+let chestSprite = null,
+  chestSpriteUrl = '/src/objectSprites/chest.png',
+  chestSpriteLoaded = false;
+
+let nyonCatAudio = new Audio('/src/sounds/nyan-cat_1.mp3');
+
 let floorTypes = {
   solid: 0,
   path: 1,
@@ -52,7 +74,20 @@ let directions = {
 
 let countdown = 1000;
 let isAllowedToShoot = false;
+let isAllowedToOpenChest = false;
+
 let gunAmmo = 0;
+let playerWidth = 16;
+let playerHeight = 18;
+let playerLoopIndex = 0;
+let playerIsMoving = false;
+
+let enemyLoopIndex = 0;
+let keyLoopIndexH = 0;
+let keyLoopIndexV = 0;
+let keySpriteValues = { x: 0, y: 0, w: 20, h: 20 };
+let chestSpriteValues = { x: 8, y: 8, w: 30, h: 20 };
+let gunSpriteValues = { x: 0, y: 0, w: 119, h: 81 };
 
 class GameLevel {
   constructor(canvas, context) {
@@ -70,24 +105,30 @@ class GameLevel {
     this.slowObstArr = [];
     this.pathObstArr = [];
     this.gunShots = [];
-    this.originalPlayerSpeed = 5;
-    this.playerSpeed = this.originalPlayerSpeed;
-    this.slowPlayerSpeed = this.originalPlayerSpeed / 3;
-    this.gunShotSpeed = 5;
-    this.enemyArr = [];
-    this.key = this.createKey();
-    this.gun = this.createGun();
-    this.generateEnemies();
-    this.mapArr = this.createMapArr();
     this.directions = {
       up: 0,
       right: 1,
       down: 2,
       left: 3
     };
+    this.originalPlayerSpeed = 5;
+    this.playerSpeed = this.originalPlayerSpeed;
+    this.slowPlayerSpeed = this.originalPlayerSpeed / 3;
+    this.gunShotSpeed = 5;
+    this.frameIndex = 0;
+    this.lastUpdate = Date.now();
+    this.enemyArr = [];
+    this.key = this.createKey();
+    this.chest = this.createChest();
+    this.gun = this.createGun();
+    this.generateEnemies();
+    this.mapArr = this.createMapArr();
     this.player = new Player(this);
     this.viewport = new ViewPort(this);
     this.viewport.screen = [canvas.width, canvas.height];
+    this.handlePlayerSprite();
+    this.handleEnemySprite();
+    this.handleKeySprite();
     this.runCountdown(this.countdown);
     this.handleImages();
     this.drawLevel();
@@ -159,8 +200,8 @@ class GameLevel {
   }
 
   generateEnemies() {
-    this.createEnemy(1, [40, 40], [100, 200], [200, 300]);
-    this.createEnemy(1, [20, 20], [100, 200], [400, 300]);
+    this.createEnemy(1, [60, 40], [100, 200], [200, 300]);
+    this.createEnemy(1, [40, 20], [100, 200], [400, 300]);
   }
 
   //Generates one Enemy and pushes him to the enemy Array
@@ -187,12 +228,16 @@ class GameLevel {
     return new Key(this, [20, 20], [200, 200]);
   }
 
+  createChest() {
+    return new Chest(this, [30, 30], [200, 300]);
+  }
+
   //Generates a gun to pick up´
   createGun() {
     return new Gun(this, [20, 20], [70, 200]);
   }
 
-  //Tries to load the image
+  //Tries to load the images
   handleImages() {
     tileset = new Image();
     tileset.onerror = () => {
@@ -201,82 +246,50 @@ class GameLevel {
     };
     tileset.onload = () => (tilesetLoaded = true);
     tileset.src = tileseturl;
-  }
 
-  //Check if obstacles are colliding
-  isAllowedToMove(direction) {
-    let allowedToMove = true;
-    switch (direction) {
-      case 'Up':
-        for (let element of this.obstacleArr) {
-          if (
-            !element.checkIntersectionTop(
-              this.player.dimension[0],
-              this.player.dimension[1],
-              this.player.position[0],
-              this.player.position[1],
-              this.playerSpeed
-            )
-          ) {
-            allowedToMove = true;
-          } else {
-            return false;
-          }
-        }
-        break;
-      case 'Down':
-        for (let element of this.obstacleArr) {
-          if (
-            !element.checkIntersectionBottom(
-              this.player.dimension[0],
-              this.player.dimension[1],
-              this.player.position[0],
-              this.player.position[1],
-              this.playerSpeed
-            )
-          ) {
-            allowedToMove = true;
-          } else {
-            return false;
-          }
-        }
-        break;
-      case 'Left':
-        for (let element of this.obstacleArr) {
-          if (
-            !element.checkIntersectionLeft(
-              this.player.dimension[0],
-              this.player.dimension[1],
-              this.player.position[0],
-              this.player.position[1],
-              this.playerSpeed
-            )
-          ) {
-            allowedToMove = true;
-          } else {
-            return false;
-          }
-        }
-        break;
-      case 'Right':
-        for (let element of this.obstacleArr) {
-          if (
-            !element.checkIntersectionRight(
-              this.player.dimension[0],
-              this.player.dimension[1],
-              this.player.position[0],
-              this.player.position[1],
-              this.playerSpeed
-            )
-          ) {
-            allowedToMove = true;
-          } else {
-            return false;
-          }
-        }
-        break;
-    }
-    return allowedToMove;
+    //playerSprite
+    playerSprite = new Image();
+    playerSprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    playerSprite.onload = () => (playerSpriteLoaded = true);
+    playerSprite.src = playerSpriteUrl;
+
+    //enemySprite
+    enemySprite = new Image();
+    enemySprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    enemySprite.onload = () => (enemySpriteLoaded = true);
+    enemySprite.src = enemySpriteUrl;
+
+    //keySprite
+    keySprite = new Image();
+    keySprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    keySprite.onload = () => (keySpriteLoaded = true);
+    keySprite.src = keySpriteUrl;
+
+    //keySprite
+    gunSprite = new Image();
+    gunSprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    gunSprite.onload = () => (gunSpriteLoaded = true);
+    gunSprite.src = gunSpriteUrl;
+
+    chestSprite = new Image();
+    chestSprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    chestSprite.onload = () => (chestSpriteLoaded = true);
+    chestSprite.src = chestSpriteUrl;
   }
 
   //Handles the keyboard input
@@ -285,37 +298,96 @@ class GameLevel {
       const code = event.code;
       switch (code) {
         case 'ArrowUp':
+        case 'KeyW':
           this.player.direction = this.directions.up;
-          if (this.isAllowedToMove('Up')) {
+          if (
+            this.player.isAllowedToMove(
+              'Up',
+              this.player,
+              this.obstacleArr,
+              this.playerSpeed
+            )
+          ) {
             this.checkPlayerSpeed();
+            playerIsMoving = true;
             this.player.position[1] -= this.playerSpeed;
           }
           break;
         case 'ArrowDown':
+        case 'KeyS':
           this.player.direction = this.directions.down;
-          if (this.isAllowedToMove('Down')) {
+          if (
+            this.player.isAllowedToMove(
+              'Down',
+              this.player,
+              this.obstacleArr,
+              this.playerSpeed
+            )
+          ) {
             this.checkPlayerSpeed();
+            playerIsMoving = true;
             this.player.position[1] += this.playerSpeed;
           }
           break;
         case 'ArrowRight':
+        case 'KeyD':
           this.player.direction = this.directions.right;
-          if (this.isAllowedToMove('Right')) {
+          if (
+            this.player.isAllowedToMove(
+              'Right',
+              this.player,
+              this.obstacleArr,
+              this.playerSpeed
+            )
+          ) {
             this.checkPlayerSpeed();
+            playerIsMoving = true;
             this.player.position[0] += this.playerSpeed;
           }
           break;
         case 'ArrowLeft':
+        case 'KeyA':
           this.player.direction = this.directions.left;
-          if (this.isAllowedToMove('Left')) {
+          if (
+            this.player.isAllowedToMove(
+              'Left',
+              this.player,
+              this.obstacleArr,
+              this.playerSpeed
+            )
+          ) {
             this.checkPlayerSpeed();
+            playerIsMoving = true;
             this.player.position[0] -= this.playerSpeed;
           }
           break;
         case 'Space':
           if (isAllowedToShoot && gunAmmo > 0) {
+            playerIsMoving = false;
             this.playerFiresGun();
           }
+      }
+    });
+
+    window.addEventListener('keyup', (event) => {
+      const code = event.code;
+      switch (code) {
+        case 'ArrowUp':
+        case 'KeyW':
+          playerIsMoving = false;
+          break;
+        case 'ArrowDown':
+        case 'KeyS':
+          playerIsMoving = false;
+          break;
+        case 'ArrowRight':
+        case 'KeyD':
+          playerIsMoving = false;
+          break;
+        case 'ArrowLeft':
+        case 'KeyA':
+          playerIsMoving = false;
+          break;
       }
     });
   }
@@ -395,9 +467,94 @@ class GameLevel {
 
   //Continuoulsy decreases the countdown
   runCountdown() {
-    setInterval(function () {
+    setInterval(() => {
       countdown--;
     }, 1000);
+  }
+
+  handlePlayerSprite() {
+    let cycleLoop = [0, 1, 0, 2];
+    setInterval(() => {
+      let sprite = this.player.sprites[this.player.direction];
+      if (playerIsMoving) {
+        sprite[0].x = cycleLoop[playerLoopIndex] * playerWidth;
+        playerLoopIndex++;
+        if (playerLoopIndex >= cycleLoop.length) {
+          playerLoopIndex = 0;
+        }
+      } else {
+        sprite[0].x = 0;
+      }
+    }, 120);
+  }
+
+  handleEnemySprite() {
+    setInterval(() => {
+      this.enemyArr.forEach((enemy) => {
+        let sprite = enemy.sprites[this.directions.right];
+        sprite[0].x = enemyLoopIndex * sprite[0].w;
+      });
+      enemyLoopIndex++;
+      if (enemyLoopIndex >= 7) {
+        enemyLoopIndex = 0;
+      }
+    }, 120);
+  }
+
+  handleKeySprite() {
+    setInterval(() => {
+      keySpriteValues.x = keyLoopIndexH * keySpriteValues.w;
+      keySpriteValues.y = keyLoopIndexV * keySpriteValues.h;
+      keyLoopIndexH++;
+      if (keyLoopIndexH >= 3) {
+        keyLoopIndexV++;
+        keyLoopIndexH = 0;
+      }
+      if (keyLoopIndexV >= 2) {
+        keyLoopIndexV = 0;
+      }
+    }, 120);
+  }
+
+  handleGunShot() {
+    this.gunShots.forEach((shot, index) => {
+      shot.shoot();
+      this.enemyArr.forEach((enemy, index) => {
+        if (enemy.checkIntersectionWithOffset(shot)) {
+          enemy.isShot = true;
+          countdown += 100;
+        }
+      });
+      if (
+        shot.position[0] + shot.dimension[0] > this.canvas.width ||
+        shot.position[0] < 0 ||
+        shot.position[1] + shot.dimension[1] > this.canvas.height ||
+        shot.position[1] < 0
+      ) {
+        this.gunShots.splice(index, 1);
+      }
+    });
+  }
+
+  handlePlayerEnemyIntersection() {
+    //Decreases countdown when player hits enemy
+    this.enemyArr.forEach((enemy, index) => {
+      if (!enemy.isShot) {
+        enemy.handleMovement();
+        if (enemy.checkIntersection(this.player)) {
+          countdown--;
+        }
+      } else {
+        enemy.handleMovementWhenShot();
+        if (enemy.currPosition[0] + this.viewport.offset[0] > this.canvas.width) {
+          this.enemyArr.splice(index, 1);
+          nyonCatAudio.pause();
+          nyonCatAudio.load();
+        } else {
+          nyonCatAudio.play();
+        }
+      }
+    });
   }
 
   runLogic() {
@@ -412,42 +569,27 @@ class GameLevel {
     this.context.fillStyle = '#000000';
     this.context.fillRect(0, 0, this.viewport.screen[0], this.viewport.screen[1]);
 
-    //Decreases countdown when player hits enemy
-    this.enemyArr.forEach((enemy) => {
-      enemy.handleMovement();
-      if (enemy.checkIntersection(this.player)) {
-        countdown--;
-      }
-    });
+    //Player-Enemy logic
+    this.handlePlayerEnemyIntersection();
+    this.handleGunShot();
 
-    this.gunShots.forEach((shot, index) => {
-      shot.shoot();
-      this.enemyArr.forEach((enemy, index) => {
-        if (enemy.checkIntersectionWithOffset(shot)) {
-          this.enemyArr.splice(index, 1);
-          countdown += 100;
-        }
-      });
-      if (
-        shot.position[0] + shot.dimension[0] > this.canvas.width ||
-        shot.position[0] < 0 ||
-        shot.position[1] + shot.dimension[1] > this.canvas.height ||
-        shot.position[1] < 0
-      ) {
-        this.gunShots.splice(index, 1);
-      }
-    });
-
+    //Key logic
     if (typeof this.key === 'object') {
-      //Key logic
       if (this.key.checkIntersection(this.player)) {
         delete this.key;
+        isAllowedToOpenChest = true;
         console.log('GOT THE KEY');
       }
     }
 
+    if (typeof this.chest === 'object') {
+      if (this.chest.checkIntersection(this.player) && isAllowedToOpenChest) {
+        console.log('GOT THE CHEST');
+      }
+    }
+
+    //Gun logic
     if (typeof this.gun === 'object') {
-      //Gun logic
       if (this.gun.checkIntersection(this.player)) {
         isAllowedToShoot = true;
         gunAmmo += 20;
@@ -457,6 +599,18 @@ class GameLevel {
     }
   }
 
+  //potential Bridge
+  // drawBridge(x, y) {
+  //   this.mapArr[this.toIndex(x, y)] = this.mapArr[this.toIndex(x, y) === 4 ? 2 : 4];
+  // }
+
+  // handleEvents(x, y) {
+  //   if (x === 2 && y === 2) {
+  //     console.log('moin');
+  //     this.drawBridge(4, 2);
+  //   }
+  // }
+
   toIndex(x, y) {
     return y * this.mapArrayWidth + x;
   }
@@ -465,7 +619,6 @@ class GameLevel {
   drawLevel() {
     window.requestAnimationFrame(() => {
       this.runLogic();
-
       //Draw the Map
       for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
         for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
@@ -512,10 +665,9 @@ class GameLevel {
         }
       }
 
-      //Draw the player
       let sprite = this.player.sprites[this.player.direction];
       this.context.drawImage(
-        tileset,
+        playerSprite,
         sprite[0].x,
         sprite[0].y,
         sprite[0].w,
@@ -527,31 +679,70 @@ class GameLevel {
       );
 
       //Draw the enemy
-      this.context.fillStyle = '#0000ff';
-      this.enemyArr.forEach((element, index) => {
-        this.context.fillRect(
-          this.viewport.offset[0] + element.currPosition[0],
-          this.viewport.offset[1] + element.currPosition[1],
-          element.dimension[0],
-          element.dimension[1]
+      this.enemyArr.forEach((enemy) => {
+        let sprite = enemy.sprites[this.directions.right];
+        this.context.save();
+        // this.context.translate(sprite[0].x, sprite[0].y);
+        this.context.scale(1, 1);
+        this.context.drawImage(
+          enemySprite,
+          sprite[0].x,
+          sprite[0].y,
+          sprite[0].w,
+          sprite[0].h,
+          this.viewport.offset[0] + enemy.currPosition[0],
+          this.viewport.offset[1] + enemy.currPosition[1],
+          enemy.dimension[0],
+          enemy.dimension[1]
         );
+        this.context.restore();
       });
 
-      this.gunShots.forEach((element) => {
-        element.draw();
+      /*
+            this.enemyArr.forEach((enemy) => {
+        let sprite = enemy.sprites[this.directions.right];
+        this.context.save();
+        this.context.translate(sprite[0].x, sprite[0].y);
+        if (enemy.direction === 'end')
+		this.context.scale(-1, 1);
+        this.context.drawImage(
+          enemySprite,
+          0,
+          0,
+          sprite[0].w,
+          sprite[0].h,
+          this.viewport.offset[0] + enemy.currPosition[0],
+          this.viewport.offset[1] + enemy.currPosition[1],
+          enemy.dimension[0],
+          enemy.dimension[1]
+        );
+        this.context.restore();
+      });
+      */
+
+      this.gunShots.forEach((gunShot) => {
+        gunShot.draw();
       });
 
       //Draw the key
       if (typeof this.key === 'object') {
-        this.key.draw('black', [
+        this.key.draw(this.key, keySprite, keySpriteValues, [
           this.viewport.offset[0] + this.key.position[0],
           this.viewport.offset[1] + this.key.position[1]
         ]);
       }
 
+      //Draw the chest
+      if (typeof this.chest === 'object') {
+        this.chest.draw(this.chest, chestSprite, chestSpriteValues, [
+          this.viewport.offset[0] + this.chest.position[0],
+          this.viewport.offset[1] + this.chest.position[1]
+        ]);
+      }
+
       //Draw the Gun
       if (typeof this.gun === 'object') {
-        this.gun.draw('gold', [
+        this.gun.draw(this.gun, gunSprite, gunSpriteValues, [
           this.viewport.offset[0] + this.gun.position[0],
           this.viewport.offset[1] + this.gun.position[1]
         ]);

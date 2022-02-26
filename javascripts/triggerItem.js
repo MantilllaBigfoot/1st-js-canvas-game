@@ -19,13 +19,27 @@ class TriggerItem {
     );
   }
 
-  draw(color, position) {
-    this.game.context.fillStyle = color;
-    this.game.context.fillRect(
+  draw(object, img, sprite, position) {
+    this.game.context.drawImage(
+      img,
+      sprite.x,
+      sprite.y,
+      sprite.w,
+      sprite.h,
       position[0],
       position[1],
-      this.dimension[0],
-      this.dimension[1]
+      object.dimension[0],
+      object.dimension[1]
     );
   }
+
+  // draw(color, position) {
+  //   this.game.context.fillStyle = color;
+  //   this.game.context.fillRect(
+  //     position[0],
+  //     position[1],
+  //     this.dimension[0],
+  //     this.dimension[1]
+  //   );
+  // }
 }
