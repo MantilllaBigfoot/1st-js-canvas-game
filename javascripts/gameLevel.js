@@ -681,21 +681,7 @@ class GameLevel {
       //Draw the enemy
       this.enemyArr.forEach((enemy) => {
         let sprite = enemy.sprites[this.directions.right];
-        this.context.save();
-        // this.context.translate(sprite[0].x, sprite[0].y);
-        this.context.scale(1, 1);
-        this.context.drawImage(
-          enemySprite,
-          sprite[0].x,
-          sprite[0].y,
-          sprite[0].w,
-          sprite[0].h,
-          this.viewport.offset[0] + enemy.currPosition[0],
-          this.viewport.offset[1] + enemy.currPosition[1],
-          enemy.dimension[0],
-          enemy.dimension[1]
-        );
-        this.context.restore();
+        enemy.draw(enemy, sprite, enemySprite);
       });
 
       /*

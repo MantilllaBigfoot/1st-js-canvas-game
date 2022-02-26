@@ -22,6 +22,24 @@ class Enemy {
     // this.sprites[gameLevelInstance.initialDirections.left] = [{ x: 0, y: 36, w: 16, h: 18 }];
   }
 
+  draw(enemy, sprite, enemySprite) {
+    this.game.context.save();
+    // this.context.translate(sprite[0].x, sprite[0].y);
+    this.game.context.scale(1, 1);
+    this.game.context.drawImage(
+      enemySprite,
+      sprite[0].x,
+      sprite[0].y,
+      sprite[0].w,
+      sprite[0].h,
+      this.game.viewport.offset[0] + enemy.currPosition[0],
+      this.game.viewport.offset[1] + enemy.currPosition[1],
+      enemy.dimension[0],
+      enemy.dimension[1]
+    );
+    this.game.context.restore();
+  }
+
   checkIntersectionWithOffset(element) {
     return (
       // is right edge of element in front of left edge of enemy
