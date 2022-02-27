@@ -23,7 +23,7 @@ let chestSprite = null,
   chestSpriteUrl = '/src/objectSprites/chest.png',
   chestSpriteLoaded = false;
 
-let nyonCatAudio = new Audio('/src/sounds/nyan-cat_1.mp3');
+const nyonCatAudio = new Audio('/src/sounds/nyan-cat_1.mp3');
 
 let floorTypes = {
   solid: 0,
@@ -72,7 +72,6 @@ let directions = {
   left: 3
 };
 
-let countdown = 1000;
 let isAllowedToShoot = false;
 let isAllowedToOpenChest = false;
 
@@ -90,9 +89,20 @@ let chestSpriteValues = { x: 8, y: 8, w: 30, h: 20 };
 let gunSpriteValues = { x: 0, y: 0, w: 119, h: 81 };
 
 class GameLevel {
-  constructor(canvas, context) {
+  constructor(canvas, context, displayScreens) {
     this.canvas = canvas;
     this.context = context;
+    this.gameIsRunning = false;
+    this.screens = displayScreens;
+    this.directions = {
+      up: 0,
+      right: 1,
+      down: 2,
+      left: 3
+    };
+  }
+
+  start() {
     this.tileW = 50;
     this.tileH = 50;
     this.mapArrayWidth = 20;
@@ -101,19 +111,15 @@ class GameLevel {
     this.framesLastSec = 0;
     this.lastFrameTime = 0;
     this.frameCount = 0;
+    this.countdown = 1000;
     this.obstacleArr = [];
     this.slowObstArr = [];
     this.pathObstArr = [];
     this.gunShots = [];
-    this.directions = {
-      up: 0,
-      right: 1,
-      down: 2,
-      left: 3
-    };
     this.originalPlayerSpeed = 5;
     this.playerSpeed = this.originalPlayerSpeed;
     this.slowPlayerSpeed = this.originalPlayerSpeed / 3;
+    this.gameIsRunning = true;
     this.gunShotSpeed = 5;
     this.frameIndex = 0;
     this.lastUpdate = Date.now();
@@ -129,10 +135,34 @@ class GameLevel {
     this.handlePlayerSprite();
     this.handleEnemySprite();
     this.handleKeySprite();
+    this.countDownTrigger;
     this.runCountdown(this.countdown);
     this.handleImages();
     this.drawLevel();
     this.enableControls();
+    this.displayScreen('playing');
+    startTitleAudio.pause();
+    startTitleAudio.load();
+    gameAudio.muted = false;
+    gameAudio.loop = true;
+    gameAudio.play();
+  }
+
+  lose() {
+    this.gameIsRunning = false;
+    this.displayScreen('end');
+    gameAudio.pause();
+    gameAudio.load();
+    startTitleAudio.muted = false;
+    startTitleAudio.loop = true;
+    startTitleAudio.play();
+  }
+
+  displayScreen(name) {
+    for (let screenName in this.screens) {
+      this.screens[screenName].style.display = 'none';
+    }
+    this.screens[name].style.display = '';
   }
 
   //Creates the map with obstacles
@@ -467,8 +497,14 @@ class GameLevel {
 
   //Continuoulsy decreases the countdown
   runCountdown() {
-    setInterval(() => {
-      countdown--;
+    this.countDownTrigger = setInterval(() => {
+      if (!this.gameIsRunning) {
+        clearInterval(this.countDownTrigger);
+        return;
+      }
+      if (this.countdown > 0) {
+        this.countdown--;
+      }
     }, 1000);
   }
 
@@ -522,7 +558,7 @@ class GameLevel {
       this.enemyArr.forEach((enemy, index) => {
         if (enemy.checkIntersectionWithOffset(shot)) {
           enemy.isShot = true;
-          countdown += 100;
+          this.countdown += 100;
         }
       });
       if (
@@ -542,7 +578,7 @@ class GameLevel {
       if (!enemy.isShot) {
         enemy.handleMovement();
         if (enemy.checkIntersection(this.player)) {
-          countdown--;
+          this.countdown--;
         }
       } else {
         enemy.handleMovementWhenShot();
@@ -551,6 +587,7 @@ class GameLevel {
           nyonCatAudio.pause();
           nyonCatAudio.load();
         } else {
+          nyonCatAudio.volume = 0.2;
           nyonCatAudio.play();
         }
       }
@@ -596,6 +633,10 @@ class GameLevel {
         delete this.gun;
         console.log('GOT THE GUN');
       }
+    }
+
+    if (this.countdown <= 0) {
+      this.lose();
     }
   }
 
@@ -741,14 +782,16 @@ class GameLevel {
 
       //Draw the countdown
       this.context.fillStyle = '#ffffff';
-      this.context.fillText(`Coundown: ${countdown}`, 80, 20);
+      this.context.fillText(`Coundown: ${this.countdown}`, 80, 20);
 
       //Draw the ammoCounter
       this.context.fillStyle = '#ffffff';
       this.context.fillText(`Ammo: ${gunAmmo}`, 440, 495);
 
-      //Recursion
-      this.drawLevel();
+      if (this.gameIsRunning) {
+        //Recursion
+        this.drawLevel();
+      }
     });
   }
 
