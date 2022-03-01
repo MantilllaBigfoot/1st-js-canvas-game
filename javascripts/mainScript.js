@@ -38,5 +38,4 @@ tryAgainButton.addEventListener('click', () => {
 
 winAgainButton.addEventListener('click', () => {
   gameLevel.start();
-  console.log(gameLevel.countdown);
 });

@@ -9,9 +9,15 @@ body {
   margin: 0;
   background-color: black;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: monospace;
+}
+.display-controls {
+  color: #fff;
+  margin: 0, auto;
+  text-align: center;
 }
 
 .screen {
@@ -24,7 +30,7 @@ body {
   align-items: center;
 }
 
-.screen h1{
+.screen h1 {
   color: #fff;
 }
 
