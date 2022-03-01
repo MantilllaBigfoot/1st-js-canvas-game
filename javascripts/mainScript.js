@@ -7,14 +7,18 @@ const context = canvas.getContext('2d');
 const startScreenElement = document.getElementById('start-screen');
 const playingScreenElement = document.getElementById('playing-screen');
 const endScreenElement = document.getElementById('game-over-screen');
+const winnerScreenElement = document.getElementById('winner-screen');
 const startButton = startScreenElement.querySelector('span');
 const tryAgainButton = endScreenElement.querySelector('span');
+const winAgainButton = winnerScreenElement.querySelector('span');
 
 const screenElements = {
   start: startScreenElement,
   playing: playingScreenElement,
-  end: endScreenElement
+  end: endScreenElement,
+  winner: winnerScreenElement
 };
+
 
 startScreenElement.addEventListener('mousemove', function () {
   startTitleAudio.muted = false;
@@ -30,4 +34,9 @@ startButton.addEventListener('click', () => {
 
 tryAgainButton.addEventListener('click', () => {
   gameLevel.start();
+});
+
+winAgainButton.addEventListener('click', () => {
+  gameLevel.start();
+  console.log(gameLevel.countdown);
 });

@@ -1,4 +1,7 @@
 //Regions: ctrl+M ctrl+R
+
+/* #region  Declaration */
+
 let tileset = null,
   tileseturl = '/tileset.png',
   tilesetLoaded = false;
@@ -19,11 +22,17 @@ let gunSprite = null,
   gunSpriteUrl = '/src/gunSprites/revolver.png',
   gunSpriteLoaded = false;
 
+let ammoSprite = null,
+  ammoSpriteUrl = '/src/gunSprites/ammobox.png',
+  ammoSpriteLoaded = false;
+
 let chestSprite = null,
   chestSpriteUrl = '/src/objectSprites/chest.png',
   chestSpriteLoaded = false;
 
 const nyonCatAudio = new Audio('/src/sounds/nyan-cat_1.mp3');
+const shotAudio = new Audio('/src/sounds/laserShot.mp3');
+const ammoAudio = new Audio('/src/sounds/ammoPickup.mp3');
 
 let floorTypes = {
   solid: 0,
@@ -72,21 +81,14 @@ let directions = {
   left: 3
 };
 
-let isAllowedToShoot = false;
-let isAllowedToOpenChest = false;
-
-let gunAmmo = 0;
 let playerWidth = 16;
 let playerHeight = 18;
-let playerLoopIndex = 0;
-let playerIsMoving = false;
-
-let enemyLoopIndex = 0;
-let keyLoopIndexH = 0;
-let keyLoopIndexV = 0;
 let keySpriteValues = { x: 0, y: 0, w: 20, h: 20 };
 let chestSpriteValues = { x: 8, y: 8, w: 30, h: 20 };
 let gunSpriteValues = { x: 0, y: 0, w: 119, h: 81 };
+let ammoSpriteValues = { x: 0, y: 0, w: 181, h: 125 };
+
+/* #endregion */
 
 class GameLevel {
   constructor(canvas, context, displayScreens) {
@@ -94,6 +96,7 @@ class GameLevel {
     this.context = context;
     this.gameIsRunning = false;
     this.screens = displayScreens;
+    this.enableControls();
     this.directions = {
       up: 0,
       right: 1,
@@ -103,6 +106,9 @@ class GameLevel {
   }
 
   start() {
+    this.gameIsRunning = true;
+    this.isAllowedToShoot = false;
+    this.isAllowedToOpenChest = false;
     this.tileW = 50;
     this.tileH = 50;
     this.mapArrayWidth = 20;
@@ -111,7 +117,13 @@ class GameLevel {
     this.framesLastSec = 0;
     this.lastFrameTime = 0;
     this.frameCount = 0;
-    this.countdown = 1000;
+    this.countdown = 100;
+    this.playerLoopIndex = 0;
+    this.playerIsMoving = false;
+    this.gunAmmo = 0;
+    this.enemyLoopIndex = 0;
+    this.keyLoopIndexH = 0;
+    this.keyLoopIndexV = 0;
     this.obstacleArr = [];
     this.slowObstArr = [];
     this.pathObstArr = [];
@@ -119,11 +131,12 @@ class GameLevel {
     this.originalPlayerSpeed = 5;
     this.playerSpeed = this.originalPlayerSpeed;
     this.slowPlayerSpeed = this.originalPlayerSpeed / 3;
-    this.gameIsRunning = true;
     this.gunShotSpeed = 5;
     this.frameIndex = 0;
     this.lastUpdate = Date.now();
     this.enemyArr = [];
+    this.ammoBoxes = [];
+    this.createAmmoBoxes();
     this.key = this.createKey();
     this.chest = this.createChest();
     this.gun = this.createGun();
@@ -139,10 +152,10 @@ class GameLevel {
     this.runCountdown(this.countdown);
     this.handleImages();
     this.drawLevel();
-    this.enableControls();
     this.displayScreen('playing');
     startTitleAudio.pause();
     startTitleAudio.load();
+    shotAudio.muted = false;
     gameAudio.muted = false;
     gameAudio.loop = true;
     gameAudio.play();
@@ -151,6 +164,16 @@ class GameLevel {
   lose() {
     this.gameIsRunning = false;
     this.displayScreen('end');
+    gameAudio.pause();
+    gameAudio.load();
+    startTitleAudio.muted = false;
+    startTitleAudio.loop = true;
+    startTitleAudio.play();
+  }
+
+  win() {
+    this.gameIsRunning = false;
+    this.displayScreen('winner');
     gameAudio.pause();
     gameAudio.load();
     startTitleAudio.muted = false;
@@ -229,6 +252,7 @@ class GameLevel {
     return mapArr;
   }
 
+  //Generates the requested Enemy
   generateEnemies() {
     this.createEnemy(1, [60, 40], [100, 200], [200, 300]);
     this.createEnemy(1, [40, 20], [100, 200], [400, 300]);
@@ -258,6 +282,7 @@ class GameLevel {
     return new Key(this, [20, 20], [200, 200]);
   }
 
+  //Generates the winning chest
   createChest() {
     return new Chest(this, [30, 30], [200, 300]);
   }
@@ -265,6 +290,11 @@ class GameLevel {
   //Generates a gun to pick up´
   createGun() {
     return new Gun(this, [20, 20], [70, 200]);
+  }
+
+  //Generates the ammoBoxes
+  createAmmoBoxes() {
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [100, 300]));
   }
 
   //Tries to load the images
@@ -304,7 +334,7 @@ class GameLevel {
     keySprite.onload = () => (keySpriteLoaded = true);
     keySprite.src = keySpriteUrl;
 
-    //keySprite
+    //gunSprite
     gunSprite = new Image();
     gunSprite.onerror = () => {
       this.canvas = null;
@@ -312,6 +342,15 @@ class GameLevel {
     };
     gunSprite.onload = () => (gunSpriteLoaded = true);
     gunSprite.src = gunSpriteUrl;
+
+    //gammoSprite
+    ammoSprite = new Image();
+    ammoSprite.onerror = () => {
+      this.canvas = null;
+      console.log('Failed loading tileset.');
+    };
+    ammoSprite.onload = () => (ammoSpriteLoaded = true);
+    ammoSprite.src = ammoSpriteUrl;
 
     chestSprite = new Image();
     chestSprite.onerror = () => {
@@ -339,7 +378,7 @@ class GameLevel {
             )
           ) {
             this.checkPlayerSpeed();
-            playerIsMoving = true;
+            this.playerIsMoving = true;
             this.player.position[1] -= this.playerSpeed;
           }
           break;
@@ -355,7 +394,7 @@ class GameLevel {
             )
           ) {
             this.checkPlayerSpeed();
-            playerIsMoving = true;
+            this.playerIsMoving = true;
             this.player.position[1] += this.playerSpeed;
           }
           break;
@@ -371,7 +410,7 @@ class GameLevel {
             )
           ) {
             this.checkPlayerSpeed();
-            playerIsMoving = true;
+            this.playerIsMoving = true;
             this.player.position[0] += this.playerSpeed;
           }
           break;
@@ -387,13 +426,13 @@ class GameLevel {
             )
           ) {
             this.checkPlayerSpeed();
-            playerIsMoving = true;
+            this.playerIsMoving = true;
             this.player.position[0] -= this.playerSpeed;
           }
           break;
         case 'Space':
-          if (isAllowedToShoot && gunAmmo > 0) {
-            playerIsMoving = false;
+          if (this.isAllowedToShoot && this.gunAmmo > 0) {
+            this.playerIsMoving = false;
             this.playerFiresGun();
           }
       }
@@ -404,24 +443,25 @@ class GameLevel {
       switch (code) {
         case 'ArrowUp':
         case 'KeyW':
-          playerIsMoving = false;
+          this.playerIsMoving = false;
           break;
         case 'ArrowDown':
         case 'KeyS':
-          playerIsMoving = false;
+          this.playerIsMoving = false;
           break;
         case 'ArrowRight':
         case 'KeyD':
-          playerIsMoving = false;
+          this.playerIsMoving = false;
           break;
         case 'ArrowLeft':
         case 'KeyA':
-          playerIsMoving = false;
+          this.playerIsMoving = false;
           break;
       }
     });
   }
 
+  //Logic when Player fires a gunShot
   playerFiresGun() {
     const position = [];
     const dimension = [10, 10];
@@ -476,7 +516,9 @@ class GameLevel {
       [10, 10]
     );
     this.gunShots.push(gunShot);
-    gunAmmo--;
+    shotAudio.load();
+    shotAudio.play();
+    this.gunAmmo--;
   }
 
   //Slows player when going over slowObstacle
@@ -508,15 +550,20 @@ class GameLevel {
     }, 1000);
   }
 
+  /* #region  Handle Sprites */
   handlePlayerSprite() {
     let cycleLoop = [0, 1, 0, 2];
-    setInterval(() => {
+    this.playerIntervall = setInterval(() => {
+      if (!this.gameIsRunning) {
+        clearInterval(this.playerIntervall);
+        return;
+      }
       let sprite = this.player.sprites[this.player.direction];
-      if (playerIsMoving) {
-        sprite[0].x = cycleLoop[playerLoopIndex] * playerWidth;
-        playerLoopIndex++;
-        if (playerLoopIndex >= cycleLoop.length) {
-          playerLoopIndex = 0;
+      if (this.playerIsMoving) {
+        sprite[0].x = cycleLoop[this.playerLoopIndex] * playerWidth;
+        this.playerLoopIndex++;
+        if (this.playerLoopIndex >= cycleLoop.length) {
+          this.playerLoopIndex = 0;
         }
       } else {
         sprite[0].x = 0;
@@ -525,29 +572,33 @@ class GameLevel {
   }
 
   handleEnemySprite() {
-    setInterval(() => {
+    this.enemyLoop = setInterval(() => {
+      if (!this.gameIsRunning) {
+        clearInterval(this.enemyLoop);
+        return;
+      }
       this.enemyArr.forEach((enemy) => {
         let sprite = enemy.sprites[this.directions.right];
-        sprite[0].x = enemyLoopIndex * sprite[0].w;
+        sprite[0].x = this.enemyLoopIndex * sprite[0].w;
       });
-      enemyLoopIndex++;
-      if (enemyLoopIndex >= 7) {
-        enemyLoopIndex = 0;
+      this.enemyLoopIndex++;
+      if (this.enemyLoopIndex >= 7) {
+        this.enemyLoopIndex = 0;
       }
     }, 120);
   }
 
   handleKeySprite() {
     setInterval(() => {
-      keySpriteValues.x = keyLoopIndexH * keySpriteValues.w;
-      keySpriteValues.y = keyLoopIndexV * keySpriteValues.h;
-      keyLoopIndexH++;
-      if (keyLoopIndexH >= 3) {
-        keyLoopIndexV++;
-        keyLoopIndexH = 0;
+      keySpriteValues.x = this.keyLoopIndexH * keySpriteValues.w;
+      keySpriteValues.y = this.keyLoopIndexV * keySpriteValues.h;
+      this.keyLoopIndexH++;
+      if (this.keyLoopIndexH >= 3) {
+        this.keyLoopIndexV++;
+        this.keyLoopIndexH = 0;
       }
-      if (keyLoopIndexV >= 2) {
-        keyLoopIndexV = 0;
+      if (this.keyLoopIndexV >= 2) {
+        this.keyLoopIndexV = 0;
       }
     }, 120);
   }
@@ -555,7 +606,7 @@ class GameLevel {
   handleGunShot() {
     this.gunShots.forEach((shot, index) => {
       shot.shoot();
-      this.enemyArr.forEach((enemy, index) => {
+      this.enemyArr.forEach((enemy) => {
         if (enemy.checkIntersectionWithOffset(shot)) {
           enemy.isShot = true;
           this.countdown += 100;
@@ -572,6 +623,9 @@ class GameLevel {
     });
   }
 
+  /* #endregion */
+
+  //Logic when Player collides with enemy
   handlePlayerEnemyIntersection() {
     //Decreases countdown when player hits enemy
     this.enemyArr.forEach((enemy, index) => {
@@ -614,44 +668,49 @@ class GameLevel {
     if (typeof this.key === 'object') {
       if (this.key.checkIntersection(this.player)) {
         delete this.key;
-        isAllowedToOpenChest = true;
+        this.isAllowedToOpenChest = true;
         console.log('GOT THE KEY');
       }
     }
 
+    //AmmoBox logic
+    this.ammoBoxes.forEach((ammoBox, index) => {
+      if (ammoBox.checkIntersection(this.player)) {
+        this.ammoBoxes.splice(index, 1);
+        if (this.isAllowedToShoot) {
+          this.gunAmmo += 10;
+          ammoAudio.load();
+          ammoAudio.play();
+        }
+      }
+    });
+
+    //Chest logic
     if (typeof this.chest === 'object') {
-      if (this.chest.checkIntersection(this.player) && isAllowedToOpenChest) {
+      if (this.chest.checkIntersection(this.player) && this.isAllowedToOpenChest) {
         console.log('GOT THE CHEST');
+        this.win();
       }
     }
 
     //Gun logic
     if (typeof this.gun === 'object') {
       if (this.gun.checkIntersection(this.player)) {
-        isAllowedToShoot = true;
-        gunAmmo += 20;
+        this.isAllowedToShoot = true;
+        this.gunAmmo += 10;
         delete this.gun;
-        console.log('GOT THE GUN');
+        ammoAudio.load();
+        ammoAudio.play();
       }
     }
 
+    //Loose Game
     if (this.countdown <= 0) {
       this.lose();
     }
   }
 
-  //potential Bridge
-  // drawBridge(x, y) {
-  //   this.mapArr[this.toIndex(x, y)] = this.mapArr[this.toIndex(x, y) === 4 ? 2 : 4];
-  // }
-
-  // handleEvents(x, y) {
-  //   if (x === 2 && y === 2) {
-  //     console.log('moin');
-  //     this.drawBridge(4, 2);
-  //   }
-  // }
-
+  //Moves to the requestred Index in the array
   toIndex(x, y) {
     return y * this.mapArrayWidth + x;
   }
@@ -725,28 +784,29 @@ class GameLevel {
         enemy.draw(enemy, sprite, enemySprite);
       });
 
-      /*
-            this.enemyArr.forEach((enemy) => {
-        let sprite = enemy.sprites[this.directions.right];
-        this.context.save();
-        this.context.translate(sprite[0].x, sprite[0].y);
-        if (enemy.direction === 'end')
-		this.context.scale(-1, 1);
-        this.context.drawImage(
-          enemySprite,
-          0,
-          0,
-          sprite[0].w,
-          sprite[0].h,
-          this.viewport.offset[0] + enemy.currPosition[0],
-          this.viewport.offset[1] + enemy.currPosition[1],
-          enemy.dimension[0],
-          enemy.dimension[1]
-        );
-        this.context.restore();
-      });
-      */
+      /* #region TODO */
+    //         this.enemyArr.forEach((enemy) => {
+    //     let sprite = enemy.sprites[this.directions.right];
+    //     this.context.save();
+    //     this.context.translate(sprite[0].x, sprite[0].y);
+    //     if (enemy.direction === 'end')
+		// this.context.scale(-1, 1);
+    //     this.context.drawImage(
+    //       enemySprite,
+    //       0,
+    //       0,
+    //       sprite[0].w,
+    //       sprite[0].h,
+    //       this.viewport.offset[0] + enemy.currPosition[0],
+    //       this.viewport.offset[1] + enemy.currPosition[1],
+    //       enemy.dimension[0],
+    //       enemy.dimension[1]
+    //     );
+    //     this.context.restore();
+    //   });
+       /* #endregion */
 
+      //Draw the gunshots
       this.gunShots.forEach((gunShot) => {
         gunShot.draw();
       });
@@ -775,6 +835,14 @@ class GameLevel {
         ]);
       }
 
+      //Draw the AmmoBox
+      this.ammoBoxes.forEach((ammoBox) => {
+        ammoBox.draw(ammoBox, ammoSprite, ammoSpriteValues, [
+          this.viewport.offset[0] + ammoBox.position[0],
+          this.viewport.offset[1] + ammoBox.position[1]
+        ]);
+      });
+
       //Draw the FPS counter
       this.context.fillStyle = '#ff0000';
       this.context.fillText(`FPS: ${this.framesLastSec}`, 20, 20);
@@ -786,7 +854,7 @@ class GameLevel {
 
       //Draw the ammoCounter
       this.context.fillStyle = '#ffffff';
-      this.context.fillText(`Ammo: ${gunAmmo}`, 440, 495);
+      this.context.fillText(`Ammo: ${this.gunAmmo}`, 440, 495);
 
       if (this.gameIsRunning) {
         //Recursion

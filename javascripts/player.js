@@ -86,6 +86,4 @@ class Player {
     }
     return allowedToMove;
   }
-
-
 }
