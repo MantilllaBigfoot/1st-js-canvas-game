@@ -3,7 +3,7 @@
 /* #region  Declaration */
 
 let tileset = null,
-  tileseturl = '/tileset.png',
+  tileseturl = '/src/basicSprites/tileset.png',
   tilesetLoaded = false;
 
 let playerSprite = null,
@@ -37,7 +37,8 @@ const ammoAudio = new Audio('/src/sounds/ammoPickup.mp3');
 let floorTypes = {
   solid: 0,
   path: 1,
-  water: 2
+  water: 2,
+  ice: 3
 };
 
 //The sprite section determins the coordinates of the spriten in the picture
@@ -71,6 +72,11 @@ let tileTypes = {
     colour: '#678fd9',
     floor: floorTypes.water,
     sprite: [{ x: 160, y: 0, w: 40, h: 40 }]
+  },
+  5: {
+    colour: '#eeeeff',
+    floor: floorTypes.ice,
+    sprite: [{ x: 120, y: 120, w: 40, h: 40 }]
   }
 };
 
@@ -105,10 +111,12 @@ class GameLevel {
     };
   }
 
-  start() {
+  start(countdown) {
     this.gameIsRunning = true;
     this.isAllowedToShoot = false;
     this.isAllowedToOpenChest = false;
+    this.playerIsOnIce = false;
+    this.playerReset = false;
     this.tileW = 50;
     this.tileH = 50;
     this.mapArrayWidth = 20;
@@ -117,7 +125,7 @@ class GameLevel {
     this.framesLastSec = 0;
     this.lastFrameTime = 0;
     this.frameCount = 0;
-    this.countdown = 100;
+    this.countdown = countdown;
     this.playerLoopIndex = 0;
     this.playerIsMoving = false;
     this.gunAmmo = 0;
@@ -127,6 +135,8 @@ class GameLevel {
     this.obstacleArr = [];
     this.slowObstArr = [];
     this.pathObstArr = [];
+    this.iceObstArr = [];
+    this.waterObstArr = [];
     this.gunShots = [];
     this.originalPlayerSpeed = 5;
     this.playerSpeed = this.originalPlayerSpeed;
@@ -142,7 +152,8 @@ class GameLevel {
     this.gun = this.createGun();
     this.generateEnemies();
     this.mapArr = this.createMapArr();
-    this.player = new Player(this);
+    this.playerStartPosition = [60, 60];
+    this.player = new Player(this, this.playerStartPosition);
     this.viewport = new ViewPort(this);
     this.viewport.screen = [canvas.width, canvas.height];
     this.handlePlayerSprite();
@@ -191,13 +202,13 @@ class GameLevel {
   //Creates the map with obstacles
   createMapArr() {
     const mapArr = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 4, 1, 1, 1, 1,
+      0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 5, 5, 2, 2, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 0, 0, 2, 3, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      0, 2, 2, 0, 0, 2, 3, 1, 4, 4, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 0, 0, 2, 3, 1,
-      1, 4, 4, 1, 2, 3, 3, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2,
+      0, 2, 2, 0, 0, 5, 3, 1, 4, 4, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 0, 0, 5, 3, 1,
+      1, 4, 4, 1, 2, 3, 3, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 5, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2,
       2, 2, 2, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0,
-      0, 1, 1, 1, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 2, 4, 4,
-      4, 4, 4, 1, 1, 1, 2, 2, 2, 2, 1, 0, 0, 1, 1, 1, 1, 2, 3, 2, 1, 1, 4, 1, 1, 1, 1, 3,
+      0, 2, 1, 1, 1, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 0, 2, 1, 1, 1, 2, 4, 4,
+      4, 4, 4, 1, 1, 1, 2, 2, 2, 2, 1, 0, 0, 2, 1, 1, 1, 2, 3, 2, 1, 1, 4, 1, 1, 1, 1, 3,
       3, 2, 1, 0, 0, 1, 2, 2, 2, 2, 1, 2, 1, 1, 4, 1, 1, 1, 1, 1, 3, 2, 1, 0, 0, 1, 2, 3,
       3, 2, 1, 2, 1, 1, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 0, 1, 2, 3, 3, 2, 1, 2, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 2, 1, 0, 0, 1, 2, 3, 4, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 0,
@@ -245,6 +256,29 @@ class GameLevel {
                 this.tileH
               )
             );
+            break;
+          case 4:
+            this.waterObstArr.push(
+              new Obstacle(
+                this.game,
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              )
+            );
+            break;
+          case 5:
+            this.iceObstArr.push(
+              new Obstacle(
+                this.game,
+                x * this.tileW,
+                y * this.tileH,
+                this.tileW,
+                this.tileH
+              )
+            );
+            break;
         }
       }
     }
@@ -368,66 +402,85 @@ class GameLevel {
       switch (code) {
         case 'ArrowUp':
         case 'KeyW':
-          this.player.direction = this.directions.up;
-          if (
-            this.player.isAllowedToMove(
-              'Up',
-              this.player,
-              this.obstacleArr,
-              this.playerSpeed
-            )
-          ) {
-            this.checkPlayerSpeed();
-            this.playerIsMoving = true;
-            this.player.position[1] -= this.playerSpeed;
+          if (!this.playerIsOnIce) {
+            this.player.direction = this.directions.up;
+            if (
+              this.player.isAllowedToMove(
+                'Up',
+                this.player,
+                this.obstacleArr,
+                this.playerSpeed,
+                true
+              )
+            ) {
+              this.checkPlayerSpeed();
+              this.playerIsMoving = true;
+              this.player.position[1] -= this.playerSpeed;
+            }
           }
+
           break;
         case 'ArrowDown':
         case 'KeyS':
-          this.player.direction = this.directions.down;
-          if (
-            this.player.isAllowedToMove(
-              'Down',
-              this.player,
-              this.obstacleArr,
-              this.playerSpeed
-            )
-          ) {
-            this.checkPlayerSpeed();
-            this.playerIsMoving = true;
-            this.player.position[1] += this.playerSpeed;
+          if (!this.playerIsOnIce) {
+            this.player.direction = this.directions.down;
+            if (
+              this.player.isAllowedToMove(
+                'Down',
+                this.player,
+                this.obstacleArr,
+                this.playerSpeed,
+                true
+              )
+            ) {
+              this.checkPlayerSpeed();
+              if (!this.playerIsOnIce) {
+                this.playerIsMoving = true;
+                this.player.position[1] += this.playerSpeed;
+              }
+            }
           }
           break;
         case 'ArrowRight':
         case 'KeyD':
-          this.player.direction = this.directions.right;
-          if (
-            this.player.isAllowedToMove(
-              'Right',
-              this.player,
-              this.obstacleArr,
-              this.playerSpeed
-            )
-          ) {
-            this.checkPlayerSpeed();
-            this.playerIsMoving = true;
-            this.player.position[0] += this.playerSpeed;
+          if (!this.playerIsOnIce) {
+            this.player.direction = this.directions.right;
+            if (
+              this.player.isAllowedToMove(
+                'Right',
+                this.player,
+                this.obstacleArr,
+                this.playerSpeed,
+                true
+              )
+            ) {
+              this.checkPlayerSpeed();
+              if (!this.playerIsOnIce) {
+                this.playerIsMoving = true;
+                this.player.position[0] += this.playerSpeed;
+              }
+            }
           }
           break;
         case 'ArrowLeft':
         case 'KeyA':
-          this.player.direction = this.directions.left;
-          if (
-            this.player.isAllowedToMove(
-              'Left',
-              this.player,
-              this.obstacleArr,
-              this.playerSpeed
-            )
-          ) {
-            this.checkPlayerSpeed();
-            this.playerIsMoving = true;
-            this.player.position[0] -= this.playerSpeed;
+          if (!this.playerIsOnIce) {
+            this.player.direction = this.directions.left;
+            if (
+              this.player.isAllowedToMove(
+                'Left',
+                this.player,
+                this.obstacleArr,
+                this.playerSpeed,
+                true
+              )
+            ) {
+              this.checkPlayerSpeed();
+              if (!this.playerIsOnIce) {
+                this.playerIsMoving = true;
+                this.player.position[0] -= this.playerSpeed;
+              }
+            }
           }
           break;
         case 'Space':
@@ -648,9 +701,104 @@ class GameLevel {
     });
   }
 
+  checkObstacleIntersections() {
+    this.iceObstArr.forEach((ice) => {
+      if (ice.checkIntersection(this.player)) {
+        this.playerIsOnIce = true;
+        switch (this.player.direction) {
+          case this.directions.up:
+            this.player.position[1] -= 1;
+            break;
+          case this.directions.down:
+            this.player.position[1] += 1;
+            break;
+          case this.directions.right:
+            this.player.position[0] += 1;
+            break;
+          case this.directions.left:
+            this.player.position[0] -= 1;
+            break;
+        }
+      }
+    });
+
+    this.waterObstArr.forEach((water) => {
+      if (water.checkIntersection(this.player)) {
+        switch (this.player.direction) {
+          case this.directions.up:
+            if (water.checkIntersectionTop(this.player)) {
+              console.log('check');
+              this.playerReset = true;
+            }
+
+            break;
+          case this.directions.down:
+            if (water.checkIntersectionBottom(this.player)) {
+              console.log('check');
+              this.playerReset = true;
+            }
+            break;
+          case this.directions.right:
+            if (water.checkIntersectionRight(this.player)) {
+              console.log('check');
+              this.playerReset = true;
+            }
+            break;
+          case this.directions.left:
+            if (water.checkIntersectionLeft(this.player)) {
+              console.log('check');
+              this.playerReset = true;
+            }
+            break;
+        }
+      }
+    });
+
+    if (this.playerIsOnIce) {
+      this.slowObstArr.forEach((slowObst) => {
+        if (slowObst.checkIntersection(this.player)) {
+          switch (this.player.direction) {
+            case this.directions.up:
+              this.playerIsOnIce = !slowObst.checkIntersectionTop(this.player);
+              break;
+            case this.directions.down:
+              this.playerIsOnIce = !slowObst.checkIntersectionBottom(this.player);
+              break;
+            case this.directions.right:
+              this.playerIsOnIce = !slowObst.checkIntersectionRight(this.player);
+              break;
+            case this.directions.left:
+              this.playerIsOnIce = !slowObst.checkIntersectionLeft(this.player);
+              break;
+          }
+        }
+      });
+      this.pathObstArr.forEach((path) => {
+        if (path.checkIntersection(this.player)) {
+          switch (this.player.direction) {
+            case this.directions.up:
+              this.playerIsOnIce = !path.checkIntersectionTop(this.player);
+              break;
+            case this.directions.down:
+              this.playerIsOnIce = !path.checkIntersectionBottom(this.player);
+              break;
+            case this.directions.right:
+              this.playerIsOnIce = !path.checkIntersectionRight(this.player);
+              break;
+            case this.directions.left:
+              this.playerIsOnIce = !path.checkIntersectionLeft(this.player);
+              break;
+          }
+        }
+      });
+    }
+  }
+
   runLogic() {
     //Get framerate
     this.getFrameRate();
+
+    this.checkObstacleIntersections();
 
     //CameraMovement
     this.viewport.update(
@@ -718,7 +866,11 @@ class GameLevel {
   //Recursively draws the map with all elements
   drawLevel() {
     window.requestAnimationFrame(() => {
+      if (this.playerReset) {
+        this.gameIsRunning = false;
+      }
       this.runLogic();
+
       //Draw the Map
       for (let y = this.viewport.startTile[1]; y <= this.viewport.endTile[1]; y++) {
         for (let x = this.viewport.startTile[0]; x <= this.viewport.endTile[0]; x++) {
@@ -734,38 +886,11 @@ class GameLevel {
             this.tileW,
             this.tileH
           );
-          /* #region  oldCode */
-          // this.context.drawImage(
-          //   tileset,
-          //   tile.sprite[0].x,
-          //   tile.sprite[0].y,
-          //   tile.sprite[0].w,
-          //   tile.sprite[0].h,
-          //   this.viewport.offset[0] + x * this.tileW,
-          //   this.viewport.offset[1] + y * this.tileH
-          // );
-          // this.context.fillStyle =
-          //   tileTypes[this.mapArr[y * this.mapArrayWidth + x]].colour;
-          // switch (this.mapArr[y * this.mapArrayWidth + x]) {
-          //   case 0:
-          //     this.context.fillStyle = '#aff9e3';
-
-          //     break;
-          //   case 1:
-          //     this.context.fillStyle = '#012355';
-          //     break;
-          // }
-          // this.context.fillRect(
-          //   this.viewport.offset[0] + x * this.tileW,
-          //   this.viewport.offset[1] + y * this.tileH,
-          //   this.tileW,
-          //   this.tileH
-          // );
-          /* #endregion */
         }
       }
 
       let sprite = this.player.sprites[this.player.direction];
+
       this.context.drawImage(
         playerSprite,
         sprite[0].x,
@@ -785,26 +910,26 @@ class GameLevel {
       });
 
       /* #region TODO */
-    //         this.enemyArr.forEach((enemy) => {
-    //     let sprite = enemy.sprites[this.directions.right];
-    //     this.context.save();
-    //     this.context.translate(sprite[0].x, sprite[0].y);
-    //     if (enemy.direction === 'end')
-		// this.context.scale(-1, 1);
-    //     this.context.drawImage(
-    //       enemySprite,
-    //       0,
-    //       0,
-    //       sprite[0].w,
-    //       sprite[0].h,
-    //       this.viewport.offset[0] + enemy.currPosition[0],
-    //       this.viewport.offset[1] + enemy.currPosition[1],
-    //       enemy.dimension[0],
-    //       enemy.dimension[1]
-    //     );
-    //     this.context.restore();
-    //   });
-       /* #endregion */
+      //         this.enemyArr.forEach((enemy) => {
+      //     let sprite = enemy.sprites[this.directions.right];
+      //     this.context.save();
+      //     this.context.translate(sprite[0].x, sprite[0].y);
+      //     if (enemy.direction === 'end')
+      // this.context.scale(-1, 1);
+      //     this.context.drawImage(
+      //       enemySprite,
+      //       0,
+      //       0,
+      //       sprite[0].w,
+      //       sprite[0].h,
+      //       this.viewport.offset[0] + enemy.currPosition[0],
+      //       this.viewport.offset[1] + enemy.currPosition[1],
+      //       enemy.dimension[0],
+      //       enemy.dimension[1]
+      //     );
+      //     this.context.restore();
+      //   });
+      /* #endregion */
 
       //Draw the gunshots
       this.gunShots.forEach((gunShot) => {
@@ -859,7 +984,14 @@ class GameLevel {
       if (this.gameIsRunning) {
         //Recursion
         this.drawLevel();
+      } else {
+        // this.start();
       }
+      // if (this.playerReset) {
+      //   this.playerReset = false;
+      //   this.displayScreen('playing');
+      //   this.start(this.countdown);
+      // }
     });
   }
 

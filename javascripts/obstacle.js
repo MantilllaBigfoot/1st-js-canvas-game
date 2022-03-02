@@ -19,4 +19,25 @@ class Obstacle {
       element.position[1] < this.position[1] + this.height
     );
   }
+
+  checkIntersectionTop(element) {
+    return (
+      // is bottom edge of element on the bottom edge ob object
+      element.position[1] + element.dimension[1] <= this.position[1] + this.height
+    );
+  }
+
+  checkIntersectionBottom(element) {
+    // Is top edeg of element on the top edge of object
+    return element.position[1] >= this.position[1];
+  }
+
+  checkIntersectionLeft(element) {
+    return element.position[0] + element.dimension[0] <= this.position[0] + this.width;
+  }
+
+  checkIntersectionRight(element) {
+    return element.position[0] >= this.position[0];
+    /* #endregion */
+  }
 }
