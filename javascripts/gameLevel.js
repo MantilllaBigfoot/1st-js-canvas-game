@@ -156,9 +156,9 @@ class GameLevel {
     this.player = new Player(this, this.playerStartPosition);
     this.viewport = new ViewPort(this);
     this.viewport.screen = [canvas.width, canvas.height];
-    this.handlePlayerSprite();
-    this.handleEnemySprite();
-    this.handleKeySprite();
+    this.handlePlayerSprite(false);
+    this.handleEnemySprite(false);
+    this.handleKeySprite(false);
     this.countDownTrigger;
     this.runCountdown(this.countdown);
     this.handleImages();
@@ -604,10 +604,10 @@ class GameLevel {
   }
 
   /* #region  Handle Sprites */
-  handlePlayerSprite() {
+  handlePlayerSprite(interrupt) {
     let cycleLoop = [0, 1, 0, 2];
     this.playerIntervall = setInterval(() => {
-      if (!this.gameIsRunning) {
+      if (!this.gameIsRunning || interrupt) {
         clearInterval(this.playerIntervall);
         return;
       }
@@ -624,9 +624,9 @@ class GameLevel {
     }, 120);
   }
 
-  handleEnemySprite() {
+  handleEnemySprite(interrupt) {
     this.enemyLoop = setInterval(() => {
-      if (!this.gameIsRunning) {
+      if (!this.gameIsRunning || interrupt) {
         clearInterval(this.enemyLoop);
         return;
       }
@@ -641,8 +641,12 @@ class GameLevel {
     }, 120);
   }
 
-  handleKeySprite() {
-    setInterval(() => {
+  handleKeySprite(interrupt) {
+    this.keyLoop = setInterval(() => {
+      if (!this.gameIsRunning || interrupt) {
+        clearInterval(this.keyLoop);
+        return;
+      }
       keySpriteValues.x = this.keyLoopIndexH * keySpriteValues.w;
       keySpriteValues.y = this.keyLoopIndexV * keySpriteValues.h;
       this.keyLoopIndexH++;
@@ -867,7 +871,11 @@ class GameLevel {
   drawLevel() {
     window.requestAnimationFrame(() => {
       if (this.playerReset) {
-        this.gameIsRunning = false;
+        this.handlePlayerSprite(true);
+        this.handleEnemySprite(true);
+        this.handleKeySprite(true);
+        this.start(this.countdown);
+        return;
       }
       this.runLogic();
 
