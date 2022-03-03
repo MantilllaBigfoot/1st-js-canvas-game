@@ -352,7 +352,7 @@ class GameLevel {
 
   //Generates the winning chest
   createChest() {
-    return new Chest(this, [30, 30], [200, 300]);
+    return new Chest(this, [30, 30], [200, 1400]);
   }
 
   //Generates a gun to pick up´
