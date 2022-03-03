@@ -20,12 +20,18 @@ body {
   text-align: center;
 }
 
-.headline{
+.headline {
+  margin-top: 20px;
+  margin-bottom: 10px;
   font-size: 25px;
 }
 
 .gamerules-headline {
   font-size: 20px;
+  margin-bottom: 10px;
+}
+p {
+  text-align: left;
 }
 
 .screen {
