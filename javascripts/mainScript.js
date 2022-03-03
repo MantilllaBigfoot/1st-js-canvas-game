@@ -19,6 +19,7 @@ const screenElements = {
   winner: winnerScreenElement
 };
 
+const countdown = 500;
 
 startScreenElement.addEventListener('mousemove', function () {
   startTitleAudio.muted = false;
@@ -29,13 +30,13 @@ startScreenElement.addEventListener('mousemove', function () {
 const gameLevel = new GameLevel(canvas, context, screenElements);
 
 startButton.addEventListener('click', () => {
-  gameLevel.start(100);
+  gameLevel.start(countdown);
 });
 
 tryAgainButton.addEventListener('click', () => {
-  gameLevel.start(100);
+  gameLevel.start(countdown);
 });
 
 winAgainButton.addEventListener('click', () => {
-  gameLevel.start(100);
+  gameLevel.start(countdown);
 });
