@@ -30,13 +30,13 @@ startScreenElement.addEventListener('mousemove', function () {
 const gameLevel = new GameLevel(canvas, context, screenElements);
 
 startButton.addEventListener('click', () => {
-  gameLevel.start(countdown);
+  gameLevel.start(countdown, false, 0, false);
 });
 
 tryAgainButton.addEventListener('click', () => {
-  gameLevel.start(countdown);
+  gameLevel.start(countdown, false, 0, false);
 });
 
 winAgainButton.addEventListener('click', () => {
-  gameLevel.start(countdown);
+  gameLevel.start(countdown, false, 0, false);
 });

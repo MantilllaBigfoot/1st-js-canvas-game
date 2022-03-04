@@ -33,6 +33,9 @@ let chestSprite = null,
 const nyonCatAudio = new Audio('/src/sounds/nyan-cat_1.mp3');
 const shotAudio = new Audio('/src/sounds/laserShot.mp3');
 const ammoAudio = new Audio('/src/sounds/ammoPickup.mp3');
+const waterSplashAudio = new Audio('/src/sounds/waterSplash.mp3');
+const loosingAudio = new Audio('/src/sounds/awww.mp3');
+const eatingAudio = new Audio('/src/sounds/eating.mp3');
 
 let floorTypes = {
   solid: 0,
@@ -112,10 +115,10 @@ class GameLevel {
     };
   }
 
-  start(countdown) {
+  start(countdown, isAllowedToShoot, gunAmmo, isAllowedToOpenChest) {
     this.gameIsRunning = true;
-    this.isAllowedToShoot = false;
-    this.isAllowedToOpenChest = false;
+    this.isAllowedToShoot = isAllowedToShoot;
+    this.isAllowedToOpenChest = isAllowedToOpenChest;
     this.playerIsOnIce = false;
     this.playerReset = false;
     this.tileW = 50;
@@ -129,7 +132,7 @@ class GameLevel {
     this.countdown = countdown;
     this.playerLoopIndex = 0;
     this.playerIsMoving = false;
-    this.gunAmmo = 0;
+    this.gunAmmo = gunAmmo;
     this.enemyLoopIndex = 0;
     this.keyLoopIndexH = 0;
     this.keyLoopIndexV = 0;
@@ -154,7 +157,6 @@ class GameLevel {
     this.generateEnemies();
     this.mapArr = this.createMapArr();
     this.playerStartPosition = [750, 800]; // [x,y]
-    //this.playerStartPosition = [60, 60];
     this.player = new Player(this, this.playerStartPosition);
     this.viewport = new ViewPort(this);
     this.viewport.screen = [canvas.width, canvas.height];
@@ -179,6 +181,8 @@ class GameLevel {
     this.displayScreen('end');
     gameAudio.pause();
     gameAudio.load();
+    loosingAudio.load();
+    loosingAudio.play();
     startTitleAudio.muted = false;
     startTitleAudio.loop = true;
     startTitleAudio.play();
@@ -206,11 +210,11 @@ class GameLevel {
     const mapArr = [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1,
-      2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-      2, 1, 1, 0, 0, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 2, 2, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 1, 1, 0, 0, 1, 1, 1,
+      2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      2, 1, 1, 0, 0, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+      3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3,
       3, 1, 2, 2, 5, 5, 5, 2, 5, 5, 5, 5, 2, 5, 5, 5, 5, 2, 5, 5, 5, 5, 5, 2, 2, 1, 1, 0,
       0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -220,35 +224,35 @@ class GameLevel {
       5, 3, 5, 3, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2,
       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 2, 2, 2, 2, 2, 1,
-      1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3,
-      3, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-      0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 3, 3,
-      3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1,
+      1, 3, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 3, 5, 3, 5, 3, 5, 3,
+      3, 1, 1, 1, 1, 1, 2, 1, 1, 3, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+      0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 2, 1, 1, 3, 1, 1, 2, 3, 3, 3, 3, 3, 3, 3,
+      3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 2, 2, 1, 3, 1, 1,
       2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1,
-      1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 5, 3,
-      5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 2, 2, 1, 3, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 5, 3,
+      5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 1,
       2, 5, 5, 5, 5, 5, 5, 5, 2, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2,
-      1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3,
-      3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0,
-      0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 4, 3, 2, 3, 4, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2,
+      1, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 5, 3, 5, 3, 5, 3,
+      3, 1, 1, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0,
+      0, 3, 5, 3, 5, 3, 5, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 4, 3, 2, 3, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 3, 1, 2,
       2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 3, 4, 3, 2, 3, 4, 3, 3, 1, 1, 1,
-      1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 1, 1, 1,
-      1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1,
+      1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 1, 1, 1,
+      1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 3, 1, 2, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 4, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 3, 1,
       2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 3,
       3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
       0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1,
-      1, 1, 1, 5, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 4, 5, 5,
-      5, 5, 5, 5, 5, 2, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      2, 2, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1,
+      1, 1, 1, 5, 1, 1, 1, 1, 5, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 4, 5, 5,
+      5, 5, 5, 5, 5, 2, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 5, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 5, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 5, 5, 5, 5, 5, 5, 5, 2, 1, 1, 1, 1, 1, 5,
-      1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+      5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 5, 5, 5, 5, 5, 5, 5, 2, 1, 1, 1, 1, 1, 5,
+      1, 1, 1, 1, 5, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 5, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
       0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
       4, 4, 4, 4, 4, 4, 4, 0
     ];
@@ -324,6 +328,132 @@ class GameLevel {
   generateEnemies() {
     this.createEnemy(1.5, [60, 40], [700, 1200], [1050, 1200]);
     this.createEnemy(1, [40, 20], [700, 1000], [900, 1000]);
+    this.createEnemy(
+      1,
+      [40, 20],
+      [13 * this.tileW, 15 * this.tileH],
+      [17 * this.tileW, 15 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [14 * this.tileW, 5 * this.tileH],
+      [14 * this.tileW, 8 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [13 * this.tileW, 15 * this.tileH],
+      [17 * this.tileW, 15 * this.tileH]
+    );
+    this.createEnemy(
+      1.5,
+      [40, 20],
+      [17 * this.tileW, 1 * this.tileH],
+      [17 * this.tileW, 8 * this.tileH]
+    );
+    this.createEnemy(
+      0.5,
+      [50, 20],
+      [23 * this.tileW, 5 * this.tileH],
+      [23 * this.tileW, 8 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 30],
+      [29 * this.tileW, 6 * this.tileH],
+      [29 * this.tileW, 6 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [60, 30],
+      [11 * this.tileW, 1 * this.tileH],
+      [11 * this.tileW, 3 * this.tileH]
+    );
+    this.createEnemy(
+      1.5,
+      [40, 20],
+      [29 * this.tileW, 1 * this.tileH],
+      [29 * this.tileW, 3 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [17 * this.tileW, 1 * this.tileH],
+      [19 * this.tileW, 3 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [2 * this.tileW, 6 * this.tileH],
+      [7 * this.tileW, 6 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [50, 35],
+      [29 * this.tileW, 18 * this.tileH],
+      [31 * this.tileW, 20 * this.tileH]
+    );
+    this.createEnemy(
+      1.5,
+      [40, 20],
+      [27 * this.tileW, 28 * this.tileH],
+      [27 * this.tileW, 30 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [60, 35],
+      [12 * this.tileW, 29 * this.tileH],
+      [22 * this.tileW, 31 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [6 * this.tileW, 31 * this.tileH],
+      [6 * this.tileW, 34 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [50, 30],
+      [1 * this.tileW, 25 * this.tileH],
+      [5 * this.tileW, 27 * this.tileH]
+    );
+    this.createEnemy(
+      1.5,
+      [40, 20],
+      [1 * this.tileW, 26 * this.tileH],
+      [6 * this.tileW, 26 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [14 * this.tileW, 32 * this.tileH],
+      [16 * this.tileW, 32 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [20 * this.tileW, 21 * this.tileH],
+      [23 * this.tileW, 23 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [40, 20],
+      [9 * this.tileW, 22 * this.tileH],
+      [13 * this.tileW, 24 * this.tileH]
+    );
+    this.createEnemy(
+      1,
+      [50, 30],
+      [30 * this.tileW, 11 * this.tileH],
+      [30 * this.tileW, 11 * this.tileH]
+    );
+    this.createEnemy(
+      0.7,
+      [40, 25],
+      [19 * this.tileW, 11 * this.tileH],
+      [24 * this.tileW, 13 * this.tileH]
+    );
   }
 
   //Generates one Enemy and pushes him to the enemy Array
@@ -357,12 +487,18 @@ class GameLevel {
 
   //Generates a gun to pick up´
   createGun() {
-    return new Gun(this, [20, 20], [750, 850]);
+    return new Gun(this, [20, 20], [34 * this.tileW, 11 * this.tileH]);
   }
 
   //Generates the ammoBoxes
   createAmmoBoxes() {
     this.ammoBoxes.push(new AmmoBox(this, [30, 30], [100, 300]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [32 * this.tileW, 18 * this.tileH]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [9 * this.tileW, 24 * this.tileH]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [24 * this.tileW, 33 * this.tileH]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [34 * this.tileW, 29 * this.tileH]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [12 * this.tileW, 8 * this.tileH]));
+    this.ammoBoxes.push(new AmmoBox(this, [30, 30], [15 * this.tileW, 34 * this.tileH]));
   }
 
   //Tries to load the images
@@ -699,9 +835,11 @@ class GameLevel {
       shot.shoot();
       this.enemyArr.forEach((enemy) => {
         if (enemy.checkIntersectionWithOffset(shot)) {
-          enemy.isShot = true;
-          this.gunShots.splice(index, 1);
-          this.countdown += 100;
+          if (!enemy.isShot) {
+            enemy.isShot = true;
+            this.gunShots.splice(index, 1);
+            this.countdown += 100;
+          }
         }
       });
       if (
@@ -724,7 +862,11 @@ class GameLevel {
       if (!enemy.isShot) {
         enemy.handleMovement();
         if (enemy.checkIntersection(this.player)) {
+          eatingAudio.loop = true;
+          eatingAudio.play();
           this.countdown--;
+        } else {
+          eatingAudio.loop = false;
         }
       } else {
         enemy.handleMovementWhenShot();
@@ -864,11 +1006,9 @@ class GameLevel {
     this.ammoBoxes.forEach((ammoBox, index) => {
       if (ammoBox.checkIntersection(this.player)) {
         this.ammoBoxes.splice(index, 1);
-        if (this.isAllowedToShoot) {
-          this.gunAmmo += 10;
-          ammoAudio.load();
-          ammoAudio.play();
-        }
+        this.gunAmmo += 5;
+        ammoAudio.load();
+        ammoAudio.play();
       }
     });
 
@@ -884,7 +1024,6 @@ class GameLevel {
     if (typeof this.gun === 'object') {
       if (this.gun.checkIntersection(this.player)) {
         this.isAllowedToShoot = true;
-        this.gunAmmo += 10;
         delete this.gun;
         ammoAudio.load();
         ammoAudio.play();
@@ -906,10 +1045,17 @@ class GameLevel {
   drawLevel() {
     window.requestAnimationFrame(() => {
       if (this.playerReset) {
+        waterSplashAudio.load();
+        waterSplashAudio.play();
         this.handlePlayerSprite(true);
         this.handleEnemySprite(true);
         this.handleKeySprite(true);
-        this.start(this.countdown);
+        this.start(
+          this.countdown,
+          this.isAllowedToShoot,
+          this.gunAmmo,
+          this.isAllowedToOpenChest
+        );
         return;
       }
       this.runLogic();
